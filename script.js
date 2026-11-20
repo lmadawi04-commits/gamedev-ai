@@ -2393,3 +2393,59 @@ console.log("GAMEDEV AI V5 — BUTTONS FIXED");
 
     console.log("GAMEDEV AI BUTTON SYSTEM V1 LOADED");
 })();
+/* =========================================
+   GAMEDEV AI — NAVIGATION SYSTEM V2
+   نظام التنقل بين الصفحات
+========================================= */
+
+(function () {
+    "use strict";
+
+    if (window.GAMEDEV_NAV_V2) return;
+    window.GAMEDEV_NAV_V2 = true;
+
+    document.addEventListener("click", function (event) {
+
+        const button = event.target.closest(".nav-item[data-page]");
+
+        if (!button) return;
+
+        const page = button.getAttribute("data-page");
+
+        if (!page) return;
+
+        // منع السلوك الافتراضي
+        event.preventDefault();
+
+        // الانتقال إلى الصفحة
+        if (typeof window.navigate === "function") {
+            window.navigate(page);
+        } else {
+            console.error("GAMEDEV AI: navigate function not found");
+        }
+
+        // إغلاق القائمة الجانبية
+        if (typeof window.closeSidebar === "function") {
+            window.closeSidebar();
+        }
+
+    }, true);
+
+    // أزرار الانتقال السريع
+    document.addEventListener("click", function (event) {
+
+        const button = event.target.closest("[data-open-page]");
+
+        if (!button) return;
+
+        const page = button.dataset.openPage;
+
+        if (page && typeof window.navigate === "function") {
+            window.navigate(page);
+        }
+
+    });
+
+    console.log("GAMEDEV AI NAVIGATION V2 LOADED");
+
+})();
