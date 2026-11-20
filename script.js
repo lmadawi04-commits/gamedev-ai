@@ -1,1792 +1,1634 @@
-```javascript
 "use strict";
 
-/* =========================================================
-   GAMEDEV AI ULTRA X
-   COMPLETE LOCAL DEVELOPMENT ENGINE
-   VERSION 7.0
-========================================================= */
+/* ============================================================
+   GAMEDEV AI — ULTRA CORE ENGINE
+   Version 4.0
+   Roblox Game Development Assistant
+============================================================ */
 
-(() => {
+const GD = {
+    version: "4.0.0",
+    storage: {
+        projects: "gdai_projects_v4",
+        theme: "gdai_theme_v4",
+        chat: "gdai_chat_v4"
+    }
+};
 
-    /* =====================================================
-       01 - CONFIGURATION
-    ===================================================== */
+/* ============================================================
+   HELPERS
+============================================================ */
 
-    const CONFIG = {
-        name: "GAMEDEV AI ULTRA X",
-        version: "7.0",
-        storage: {
-            chat: "gamedev_ultra_chat_v7",
-            projects: "gamedev_ultra_projects_v7",
-            theme: "gamedev_ultra_theme_v7"
-        },
-        maxMessages: 100
+const $ = (id) => document.getElementById(id);
+
+function safeHTML(value) {
+    return String(value ?? "").replace(/[&<>"']/g, char => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;"
+    })[char]);
+}
+
+function readStorage(key, fallback) {
+    try {
+        const value = localStorage.getItem(key);
+        return value === null ? fallback : JSON.parse(value);
+    } catch {
+        return fallback;
+    }
+}
+
+function writeStorage(key, value) {
+    try {
+        localStorage.setItem(key, JSON.stringify(value));
+        return true;
+    } catch {
+        toast("تعذر الحفظ في جهازك", "error");
+        return false;
+    }
+}
+
+function delay(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function randomID() {
+    return "GD-" + Math.random().toString(36).slice(2, 9).toUpperCase();
+}
+
+function formatDate(date = new Date()) {
+    return date.toLocaleDateString("ar-SA", {
+        year: "numeric",
+        month: "short",
+        day: "numeric"
+    });
+}
+
+function toast(message, type = "success") {
+    const container = $("toastContainer");
+
+    if (!container) {
+        console.log("[GAMEDEV AI]", message);
+        return;
+    }
+
+    const item = document.createElement("div");
+    item.className = `toast toast-${type}`;
+    item.textContent = message;
+
+    container.appendChild(item);
+
+    requestAnimationFrame(() => item.classList.add("show"));
+
+    setTimeout(() => {
+        item.classList.remove("show");
+        setTimeout(() => item.remove(), 400);
+    }, 3000);
+}
+
+/* ============================================================
+   APP STATE
+============================================================ */
+
+const App = {
+    currentPage: "home",
+    projects: readStorage(GD.storage.projects, []),
+    chat: readStorage(GD.storage.chat, []),
+    theme: localStorage.getItem(GD.storage.theme) || "dark",
+    busy: false
+};
+
+/* ============================================================
+   LOADING SCREEN
+============================================================ */
+
+function initializeLoading() {
+    const loader = $("loadingScreen");
+
+    if (!loader) return;
+
+    setTimeout(() => {
+        loader.classList.add("loaded");
+
+        setTimeout(() => {
+            loader.style.display = "none";
+        }, 700);
+    }, 900);
+}
+
+/* ============================================================
+   NAVIGATION
+============================================================ */
+
+function navigate(page) {
+    const target = $(`page-${page}`);
+
+    if (!target) {
+        toast("الصفحة غير موجودة", "error");
+        return;
+    }
+
+    App.currentPage = page;
+
+    document.querySelectorAll(".page").forEach(section => {
+        section.classList.remove("active");
+    });
+
+    target.classList.add("active");
+
+    document.querySelectorAll(".nav-item").forEach(button => {
+        button.classList.toggle(
+            "active",
+            button.dataset.page === page
+        );
+    });
+
+    const title = $("pageTitle");
+    const subtitle = $("pageSubtitle");
+
+    const pageNames = {
+        home: ["الرئيسية", "لوحة تحكم المطور"],
+        chat: ["المساعد الذكي", "اسأل وطور فكرتك"],
+        scripts: ["مختبر السكربتات", "إنشاء سكربت Roblox"],
+        ideas: ["مولد الأفكار", "اكتشف فكرة لعبتك القادمة"],
+        gui: ["مصمم الواجهات", "خطط واجهات لعبتك"],
+        errors: ["محلل الأخطاء", "حل أخطاء Lua و Roblox"],
+        projects: ["مشاريعي", "إدارة مشاريعك"],
+        library: ["مكتبة السكربتات", "أدوات وسكربتات سريعة"],
+        studio: ["Studio Lite", "أدوات التطوير"],
+        settings: ["الإعدادات", "تخصيص تجربتك"]
     };
 
-    const $ = selector => document.querySelector(selector);
+    if (title) title.textContent = pageNames[page]?.[0] || page;
+    if (subtitle) subtitle.textContent = pageNames[page]?.[1] || "";
 
-    const chatMessages = $("#chatMessages");
-    const chatInput = $("#chatInput");
-    const chatForm = $("#chatForm");
-    const codeEditor = $("#codeEditor");
-    const projectsList = $("#projectsList");
-    const toastElement = $("#toast");
+    closeSidebar();
+    window.scrollTo({ top: 0, behavior: "smooth" });
+}
 
-    let toastTimer = null;
+function initializeNavigation() {
+    document.querySelectorAll("[data-page]").forEach(button => {
+        button.addEventListener("click", () => {
+            navigate(button.dataset.page);
+        });
+    });
+}
 
-
-    /* =====================================================
-       02 - UTILITIES
-    ===================================================== */
-
-    function normalize(text) {
-        return String(text || "")
-            .toLowerCase()
-            .replace(/[أإآ]/g, "ا")
-            .replace(/ة/g, "ه")
-            .replace(/ى/g, "ي")
-            .replace(/[ًٌٍَُِّْـ]/g, "")
-            .replace(/[^\u0600-\u06FFa-z0-9\s_]/gi, " ")
-            .replace(/\s+/g, " ")
-            .trim();
-    }
-
-    function includesAny(text, words) {
-        return words.some(word => text.includes(normalize(word)));
-    }
-
-    function escapeHTML(value) {
-        return String(value)
-            .replace(/&/g, "&amp;")
-            .replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;")
-            .replace(/"/g, "&quot;")
-            .replace(/'/g, "&#039;");
-    }
-
-    function randomItem(array) {
-        return array[Math.floor(Math.random() * array.length)];
-    }
-
-    function showToast(message) {
-        if (!toastElement) return;
-
-        toastElement.textContent = message;
-        toastElement.classList.add("show");
-
-        clearTimeout(toastTimer);
-
-        toastTimer = setTimeout(() => {
-            toastElement.classList.remove("show");
-        }, 2600);
-    }
-
-    function saveData(key, data) {
-        try {
-            localStorage.setItem(key, JSON.stringify(data));
-            return true;
-        } catch (error) {
-            console.error("Storage error:", error);
-            showToast("تعذر حفظ البيانات في المتصفح");
-            return false;
-        }
-    }
-
-    function loadData(key, fallback) {
-        try {
-            const value = localStorage.getItem(key);
-            return value ? JSON.parse(value) : fallback;
-        } catch (error) {
-            console.error("Storage loading error:", error);
-            return fallback;
-        }
-    }
-
-
-    /* =====================================================
-       03 - KNOWLEDGE DATABASE
-    ===================================================== */
-
-    const KNOWLEDGE = {
-
-        greetings: [
-            "هلا والله! 🔥 وش بنطور اليوم؟",
-            "أهلًا بالمطور! جاهز نشتغل على مشروعك؟ 🚀",
-            "يا مرحبا! عطِني فكرتك ونبدأ بتحويلها إلى نظام.",
-            "أهلًا بك في GAMEDEV AI ULTRA X! 🎮"
-        ],
-
-        ideas: [
-            {
-                name: "مدينة الوظائف والترقيات",
-                description: "مدينة واقعية يبدأ فيها اللاعب من وظيفة بسيطة ويتطور حتى يصبح مديرًا أو صاحب شركة.",
-                features: [
-                    "وظائف متعددة",
-                    "نظام رواتب",
-                    "ترقيات وظيفية",
-                    "نظام شركات",
-                    "نظام عقارات",
-                    "لوحة إحصائيات"
-                ]
-            },
-            {
-                name: "حراج المدينة",
-                description: "سوق مفتوح يبيع فيه اللاعبون السيارات والممتلكات والأغراض.",
-                features: [
-                    "نظام مزادات",
-                    "نظام بيع وشراء",
-                    "متاجر اللاعبين",
-                    "نظام عملات",
-                    "سجل الصفقات",
-                    "نظام تقييم"
-                ]
-            },
-            {
-                name: "جزيرة النجاة",
-                description: "جزيرة تتغير فيها الظروف الجوية ويجب على اللاعبين جمع الموارد وبناء الملاجئ.",
-                features: [
-                    "نظام جوع وعطش",
-                    "نظام موارد",
-                    "نظام طقس",
-                    "نظام صناعة",
-                    "نظام بناء",
-                    "نظام ليالي"
-                ]
-            },
-            {
-                name: "أكاديمية الشرطة",
-                description: "لعبة محاكاة تدريب وترقيات ومهام داخل أكاديمية متكاملة.",
-                features: [
-                    "نظام رتب",
-                    "نظام اختبارات",
-                    "نظام تدريبات",
-                    "نظام مهام",
-                    "نظام مركبات",
-                    "نظام صلاحيات"
-                ]
-            },
-            {
-                name: "مصنع الأحلام",
-                description: "يبدأ اللاعب بمصنع صغير ثم يوسعه ويضيف خطوط إنتاج.",
-                features: [
-                    "نظام إنتاج",
-                    "نظام عمال",
-                    "نظام تطوير",
-                    "نظام بيع",
-                    "نظام أرباح",
-                    "نظام توسعة"
-                ]
-            }
-        ],
-
-        topics: {
-
-            datastore: `
-DataStoreService في Roblox:
-
-يستخدم لحفظ بيانات اللاعب بين جلسات اللعب.
-
-أهم النقاط:
-1. استخدمه داخل Script على السيرفر.
-2. لا تحفظ البيانات من LocalScript.
-3. استخدم pcall لمعالجة الأخطاء.
-4. استخدم UpdateAsync عند الحاجة لتحديث البيانات بأمان.
-5. لا تحفظ البيانات باستمرار دون حاجة.
-6. اختبر الحفظ في بيئة Roblox منشورة ومهيأة للوصول إلى API Services.
-
-توثيق Roblox:
-https://create.roblox.com/docs/cloud-services/data-stores
-`,
-
-            remote: `
-RemoteEvent في Roblox:
-
-يتيح التواصل بين العميل والسيرفر.
-
-الاستخدام:
-- FireServer من LocalScript.
-- OnServerEvent داخل Script.
-- FireClient لإرسال رسالة للاعب.
-- FireAllClients لإرسال رسالة لجميع اللاعبين.
-
-مهم جدًا:
-لا تثق بالقيم التي يرسلها اللاعب من جهازه.
-تحقق من المبالغ والصلاحيات والطلبات داخل السيرفر.
-
-توثيق Roblox:
-https://create.roblox.com/docs/scripting/events/remote
-`,
-
-            leaderstats: `
-leaderstats:
-
-مجلد خاص بإحصائيات اللاعب التي تظهر في قائمة اللاعبين.
-
-يمكن استخدامه لعرض:
-- Coins
-- Wins
-- Level
-- Rebirths
-
-يتم إنشاؤه عادةً داخل Script في ServerScriptService.
-`,
-
-            local: `
-LocalScript:
-
-يعمل على جهاز اللاعب.
-
-الاستخدامات:
-- واجهات المستخدم.
-- الكاميرا.
-- التحكم المحلي.
-- استقبال الأحداث المرسلة للاعب.
-
-لا تستخدمه لحفظ البيانات أو إعطاء اللاعب مكافآت موثوقة.
-`,
-
-            server: `
-Script:
-
-يعمل على السيرفر.
-
-الاستخدامات:
-- إدارة اللاعبين.
-- إعطاء المكافآت.
-- التحقق من الصلاحيات.
-- حفظ البيانات.
-- إدارة الأنظمة المشتركة.
-`,
-
-            module: `
-ModuleScript:
-
-يساعد على تقسيم الكود وإعادة استخدام الوظائف.
-
-مثال:
-
-local Module = {}
-
-function Module.Greet(name)
-    return "Hello " .. name
-end
-
-return Module
-
-يمكن استدعاؤه باستخدام require().
-`,
-
-            tween: `
-TweenService:
-
-يستخدم لإنشاء حركات سلسة للأجزاء والواجهات.
-
-مثال:
-
-local TweenService = game:GetService("TweenService")
-
-local part = workspace.Part
-
-local tweenInfo = TweenInfo.new(
-    2,
-    Enum.EasingStyle.Quad,
-    Enum.EasingDirection.Out
-)
-
-local tween = TweenService:Create(
-    part,
-    tweenInfo,
-    {Transparency = 1}
-)
-
-tween:Play()
-`,
-
-            humanoid: `
-Humanoid:
-
-مكوّن أساسي في شخصية اللاعب.
-
-من خصائصه:
-- WalkSpeed
-- JumpPower
-- Health
-- MaxHealth
-
-يمكن الوصول إليه من شخصية اللاعب عن طريق FindFirstChildOfClass("Humanoid").
-`
-        }
-
+function openTool(tool) {
+    const mapping = {
+        chat: "chat",
+        scripts: "scripts",
+        ideas: "ideas",
+        gui: "gui",
+        errors: "errors",
+        projects: "projects",
+        library: "library",
+        studio: "studio"
     };
 
+    navigate(mapping[tool] || tool);
+}
 
-    /* =====================================================
-       04 - INTENT DETECTION
-    ===================================================== */
+/* ============================================================
+   SIDEBAR
+============================================================ */
 
-    function detectIntent(message) {
+function openSidebar() {
+    const sidebar = $("sidebar");
+    const overlay = $("sidebarOverlay");
 
-        const text = normalize(message);
+    sidebar?.classList.add("open");
+    overlay?.classList.add("active");
+}
 
-        if (includesAny(text, [
-            "السلام عليكم",
-            "هلا",
-            "مرحبا",
-            "اهلا",
-            "hello",
-            "hi"
-        ])) return "greeting";
+function closeSidebar() {
+    $("sidebar")?.classList.remove("open");
+    $("sidebarOverlay")?.classList.remove("active");
+}
 
-        if (includesAny(text, [
-            "اشرح",
-            "علمني",
-            "وش معنى",
-            "ما معنى",
-            "كيف يعمل",
-            "فهمني",
-            "شرح"
-        ])) return "explain";
+function initializeSidebar() {
+    $("menuToggle")?.addEventListener("click", openSidebar);
+    $("sidebarClose")?.addEventListener("click", closeSidebar);
+    $("sidebarOverlay")?.addEventListener("click", closeSidebar);
+}
 
-        if (includesAny(text, [
-            "خطا",
-            "ايرور",
-            "error",
-            "bug",
-            "ما يشتغل",
-            "ما يعمل",
-            "خربان",
-            "يطلع لي"
-        ])) return "debug";
+/* ============================================================
+   THEME SYSTEM
+============================================================ */
 
-        if (includesAny(text, [
-            "فكره",
-            "افكار",
-            "اقترح",
-            "ماب",
-            "لعبه",
-            "map idea"
-        ])) return "idea";
+function applyTheme(theme) {
+    App.theme = theme;
 
-        if (includesAny(text, [
-            "واجهه",
-            "gui",
-            "زر",
-            "قائمه",
-            "menu",
-            "hud"
-        ])) return "gui";
+    document.documentElement.dataset.theme = theme;
 
-        if (includesAny(text, [
-            "حسن",
-            "طور",
-            "تحسين",
-            "optimize"
-        ])) return "optimize";
-
-        if (includesAny(text, [
-            "سكربت",
-            "كود",
-            "برمج",
-            "script",
-            "code",
-            "lua",
-            "luau",
-            "انشئ",
-            "سوي لي"
-        ])) return "script";
-
-        return "general";
+    if (theme === "light") {
+        document.body.classList.add("light-theme");
+    } else {
+        document.body.classList.remove("light-theme");
     }
 
+    localStorage.setItem(GD.storage.theme, theme);
 
-    /* =====================================================
-       05 - ROBLOX SCRIPT GENERATORS
-    ===================================================== */
+    const icon = $("themeIcon");
+    if (icon) icon.textContent = theme === "dark" ? "☀️" : "🌙";
+}
 
-    const SCRIPT_TEMPLATES = {
+function toggleTheme() {
+    applyTheme(App.theme === "dark" ? "light" : "dark");
+    toast("تم تغيير المظهر");
+}
 
-        coins: {
-            title: "نظام العملات",
-            location: "ServerScriptService > Script",
-            code: `-- GAMEDEV AI | Coins System
--- Location: ServerScriptService
+function initializeTheme() {
+    applyTheme(App.theme);
+    $("themeToggle")?.addEventListener("click", toggleTheme);
+}
+
+/* ============================================================
+   CHAT ENGINE
+   Local response engine — no external API connected.
+============================================================ */
+
+const ChatKnowledge = [
+    {
+        keys: ["سرعة", "speed"],
+        response: `لإنشاء نظام سرعة في Roblox:
+
+1. استخدم Humanoid داخل شخصية اللاعب.
+2. غيّر WalkSpeed عند التفعيل.
+3. لا تجعل العميل يحدد السرعة النهائية بنفسه.
+4. استخدم ServerScript للتحقق.
+
+مثال:
 
 local Players = game:GetService("Players")
 
-local STARTING_COINS = 100
-
 Players.PlayerAdded:Connect(function(player)
+    player.CharacterAdded:Connect(function(character)
+        local humanoid = character:WaitForChild("Humanoid")
+        humanoid.WalkSpeed = 30
+    end)
+end)`
+    },
+    {
+        keys: ["فلوس", "مال", "money", "cash"],
+        response: `نظام الأموال:
 
+• أنشئ leaderstats في ServerScriptService.
+• أضف IntValue باسم Cash.
+• استخدم RemoteEvent للطلبات.
+• لا تسمح للعميل بإرسال مبلغ المال مباشرة.
+
+مثال:
+
+game.Players.PlayerAdded:Connect(function(player)
     local leaderstats = Instance.new("Folder")
     leaderstats.Name = "leaderstats"
     leaderstats.Parent = player
 
-    local coins = Instance.new("IntValue")
-    coins.Name = "Coins"
-    coins.Value = STARTING_COINS
-    coins.Parent = leaderstats
+    local cash = Instance.new("IntValue")
+    cash.Name = "Cash"
+    cash.Value = 0
+    cash.Parent = leaderstats
+end)`
+    },
+    {
+        keys: ["حفظ", "داتا", "data", "datastore"],
+        response: `لحفظ البيانات في Roblox:
 
-end)
+• استخدم DataStoreService.
+• الحفظ يكون من السيرفر.
+• استخدم pcall لتجنب توقف السكربت.
+• لا تنس اختبار الحفظ في تجربة منشورة.
 
--- Example server reward function
-local function GiveCoins(player, amount)
+مثال:
 
-    if typeof(amount) ~= "number" then
-        return false
-    end
+local DataStoreService =
+    game:GetService("DataStoreService")
 
-    if amount <= 0 or amount > 100000 then
-        return false
-    end
+local Store = DataStoreService:GetDataStore("PlayerData")
 
-    local leaderstats = player:FindFirstChild("leaderstats")
-    if not leaderstats then
-        return false
-    end
-
-    local coins = leaderstats:FindFirstChild("Coins")
-    if not coins then
-        return false
-    end
-
-    coins.Value += math.floor(amount)
-
-    return true
-end
-
--- Example:
--- GiveCoins(player, 50)
-`
-        },
-
-        speed: {
-            title: "لوحة زيادة السرعة",
-            location: "Workspace > SpeedPad > Script",
-            code: `-- GAMEDEV AI | Speed Pad
--- Put this Script inside the Part
-
-local pad = script.Parent
-
-local BOOST = 10
-local DEFAULT_SPEED = 16
-local COOLDOWN = 2
-
-local debounce = {}
-
-pad.Touched:Connect(function(hit)
-
-    local character = hit:FindFirstAncestorOfClass("Model")
-    if not character then return end
-
-    local humanoid = character:FindFirstChildOfClass("Humanoid")
-    if not humanoid then return end
-
-    local player = game.Players:GetPlayerFromCharacter(character)
-    if not player then return end
-
-    if debounce[player] then return end
-
-    debounce[player] = true
-
-    humanoid.WalkSpeed = math.min(
-        humanoid.WalkSpeed + BOOST,
-        100
-    )
-
-    task.delay(COOLDOWN, function()
-        debounce[player] = nil
+local function savePlayer(player, value)
+    local success, err = pcall(function()
+        Store:SetAsync("Player_" .. player.UserId, value)
     end)
 
-end)
-`
-        },
+    if not success then
+        warn("Save failed:", err)
+    end
+end`
+    },
+    {
+        keys: ["باب", "door", "بوابة"],
+        response: `لعمل باب يفتح عند اقتراب اللاعب:
 
-        killbrick: {
-            title: "بلوك القتل",
-            location: "Workspace > KillBrick > Script",
-            code: `-- GAMEDEV AI | Kill Brick
--- Put this Script inside the Part
+• ضع Part للباب.
+• استخدم ProximityPrompt.
+• اربط حركة الباب بالسيرفر.
+• تحقق من شروط فتح الباب.
+
+مثال بسيط:
+
+local prompt = script.Parent.ProximityPrompt
+local door = script.Parent
+
+prompt.Triggered:Connect(function(player)
+    door.Transparency = 1
+    door.CanCollide = false
+
+    task.wait(3)
+
+    door.Transparency = 0
+    door.CanCollide = true
+end)`
+    },
+    {
+        keys: ["زر", "button", "gui"],
+        response: `لإنشاء زر GUI:
+
+1. أضف ScreenGui داخل StarterGui.
+2. أضف TextButton.
+3. أضف LocalScript داخل الزر.
+4. استخدم MouseButton1Click.
+
+مثال:
+
+local button = script.Parent
+
+button.MouseButton1Click:Connect(function()
+    print("تم الضغط على الزر")
+end)`
+    },
+    {
+        keys: ["ماب", "خريطة", "map", "لعبة", "game"],
+        response: `فكرة تطوير ماب:
+
+🎮 ابدأ بفكرة أساسية واضحة.
+🗺️ قسم الماب إلى مناطق.
+🎯 أضف هدفاً للاعب.
+💰 أضف نظام مكافآت.
+🔓 أضف تقدم وفتح مناطق.
+👥 اختبر الماب مع لاعبين.
+
+إذا تبي، أقدر أجهز لك مخطط ماب كامل مع الأنظمة والمهام.`
+    },
+    {
+        keys: ["تسريع", "تايم", "وقت", "timer"],
+        response: `لإنشاء نظام مؤقت:
+
+local timeLeft = 60
+
+while timeLeft > 0 do
+    print("الوقت:", timeLeft)
+    task.wait(1)
+    timeLeft -= 1
+end
+
+print("انتهى الوقت!")
+
+تقدر تربطه بواجهة TextLabel لتعرض الوقت للاعب.`
+    }
+];
+
+function getChatResponse(message) {
+    const text = message.toLowerCase();
+
+    for (const item of ChatKnowledge) {
+        if (item.keys.some(key => text.includes(key))) {
+            return item.response;
+        }
+    }
+
+    if (text.includes("مرحبا") || text.includes("السلام") || text.includes("هلا")) {
+        return "ياهلا فيك 👋 أنا مساعد GAMEDEV AI. أقدر أساعدك في سكربتات Roblox، أفكار المابات، واجهات GUI، حل الأخطاء، وأنظمة الألعاب. اكتب لي وش تبي تسوي!";
+    }
+
+    if (text.includes("سكربت") || text.includes("script")) {
+        return "أقدر أساعدك تكتب سكربت Roblox بلغة Lua. اكتب لي وش وظيفة السكربت، وين تبي تحطه، وهل تبيه ServerScript أو LocalScript، وبجهزه لك مع طريقة تركيبه.";
+    }
+
+    if (text.includes("فكرة")) {
+        return "عندي أفكار كثيرة! أقدر أطلع لك فكرة ماب كاملة مع الاسم، نظام اللعب، المناطق، المهام، التطوير، والمكافآت. حدد نوع لعبتك أو اكتب (فكرة عشوائية).";
+    }
+
+    return `وصلني طلبك:
+
+"${message}"
+
+أقدر أساعدك في:
+• برمجة Roblox بلغة Lua
+• تصميم أنظمة اللعب
+• أفكار المابات
+• واجهات GUI
+• حل الأخطاء
+• تنظيم ملفات المشروع
+
+حدد لي تفاصيل أكثر عن المطلوب حتى أجهز لك حل مناسب.
+
+ملاحظة: المساعد الحالي يعمل بمحرك ردود محلي، وليس متصلاً بنموذج ذكاء اصطناعي خارجي.`;
+}
+
+/* ============================================================
+   CHAT UI
+============================================================ */
+
+function addChatMessage(role, message) {
+    const container = $("chatMessages");
+    if (!container) return;
+
+    const wrapper = document.createElement("div");
+    wrapper.className = `chat-message ${role}`;
+
+    const avatar = document.createElement("div");
+    avatar.className = "chat-avatar";
+    avatar.textContent = role === "user" ? "👤" : "🤖";
+
+    const bubble = document.createElement("div");
+    bubble.className = "chat-bubble";
+
+    const content = document.createElement("div");
+    content.className = "chat-content";
+    content.textContent = message;
+
+    bubble.appendChild(content);
+
+    if (role === "assistant") {
+        const copy = document.createElement("button");
+        copy.className = "message-copy";
+        copy.textContent = "نسخ الرد";
+        copy.addEventListener("click", () => copyText(message));
+        bubble.appendChild(copy);
+    }
+
+    wrapper.appendChild(avatar);
+    wrapper.appendChild(bubble);
+    container.appendChild(wrapper);
+
+    container.scrollTop = container.scrollHeight;
+}
+
+async function sendChatMessage(message) {
+    const text = String(message || "").trim();
+
+    if (!text || App.busy) return;
+
+    App.busy = true;
+
+    const input = $("chatInput");
+    if (input) input.value = "";
+
+    addChatMessage("user", text);
+
+    App.chat.push({
+        role: "user",
+        text,
+        time: Date.now()
+    });
+
+    writeStorage(GD.storage.chat, App.chat);
+
+    const typing = document.createElement("div");
+    typing.className = "chat-typing";
+    typing.id = "chatTyping";
+    typing.textContent = "GAMEDEV AI يفكر...";
+    $("chatMessages")?.appendChild(typing);
+
+    await delay(650);
+
+    typing.remove();
+
+    const response = getChatResponse(text);
+
+    addChatMessage("assistant", response);
+
+    App.chat.push({
+        role: "assistant",
+        text: response,
+        time: Date.now()
+    });
+
+    writeStorage(GD.storage.chat, App.chat);
+
+    App.busy = false;
+}
+
+function initializeChat() {
+    $("chatForm")?.addEventListener("submit", event => {
+        event.preventDefault();
+        sendChatMessage($("chatInput")?.value);
+    });
+
+    $("sendChat")?.addEventListener("click", () => {
+        sendChatMessage($("chatInput")?.value);
+    });
+
+    document.querySelectorAll("[data-prompt]").forEach(button => {
+        button.addEventListener("click", () => {
+            usePrompt(button.dataset.prompt);
+        });
+    });
+
+    const input = $("chatInput");
+
+    input?.addEventListener("keydown", event => {
+        if (event.key === "Enter" && !event.shiftKey) {
+            event.preventDefault();
+            sendChatMessage(input.value);
+        }
+    });
+}
+
+function usePrompt(prompt) {
+    if (!prompt) return;
+
+    navigate("chat");
+
+    const input = $("chatInput");
+    if (input) input.value = prompt;
+
+    setTimeout(() => input?.focus(), 150);
+}
+
+function clearChat() {
+    App.chat = [];
+    writeStorage(GD.storage.chat, App.chat);
+
+    const messages = $("chatMessages");
+    if (messages) messages.innerHTML = "";
+
+    toast("تم مسح المحادثة");
+}
+
+/* ============================================================
+   SCRIPT GENERATOR
+============================================================ */
+
+const ScriptTemplates = {
+    speed: `--[ GAMEDEV AI | SPEED SYSTEM ]--
+
+local Players = game:GetService("Players")
+
+local DEFAULT_SPEED = 16
+local BOOST_SPEED = 32
+
+Players.PlayerAdded:Connect(function(player)
+    player.CharacterAdded:Connect(function(character)
+        local humanoid = character:WaitForChild("Humanoid")
+        humanoid.WalkSpeed = DEFAULT_SPEED
+    end)
+end)
+
+-- ضع منطق تفعيل السرعة الإضافية هنا
+`,
+
+    money: `--[ GAMEDEV AI | MONEY SYSTEM ]--
+
+local Players = game:GetService("Players")
+
+Players.PlayerAdded:Connect(function(player)
+    local leaderstats = Instance.new("Folder")
+    leaderstats.Name = "leaderstats"
+    leaderstats.Parent = player
+
+    local money = Instance.new("IntValue")
+    money.Name = "Money"
+    money.Value = 0
+    money.Parent = leaderstats
+end)
+
+-- أضف أنظمة المكافآت في السيرفر
+`,
+
+    leaderstats: `--[ GAMEDEV AI | LEADERSTATS ]--
+
+local Players = game:GetService("Players")
+
+Players.PlayerAdded:Connect(function(player)
+    local leaderstats = Instance.new("Folder")
+    leaderstats.Name = "leaderstats"
+    leaderstats.Parent = player
+
+    local wins = Instance.new("IntValue")
+    wins.Name = "Wins"
+    wins.Value = 0
+    wins.Parent = leaderstats
+
+    local level = Instance.new("IntValue")
+    level.Name = "Level"
+    level.Value = 1
+    level.Parent = leaderstats
+end)
+`,
+
+    door: `--[ GAMEDEV AI | INTERACTIVE DOOR ]--
+
+local door = script.Parent
+local prompt = door:WaitForChild("ProximityPrompt")
+
+local opened = false
+
+prompt.Triggered:Connect(function(player)
+    if opened then return end
+
+    opened = true
+    door.Transparency = 0.7
+    door.CanCollide = false
+
+    task.wait(3)
+
+    door.Transparency = 0
+    door.CanCollide = true
+    opened = false
+end)
+`,
+
+    kill: `--[ GAMEDEV AI | KILL PART ]--
 
 local part = script.Parent
 
-local debounce = {}
-
 part.Touched:Connect(function(hit)
+    local character = hit.Parent
+    local humanoid = character and character:FindFirstChildOfClass("Humanoid")
 
-    local character = hit:FindFirstAncestorOfClass("Model")
-    if not character then return end
-
-    local humanoid = character:FindFirstChildOfClass("Humanoid")
-    if not humanoid then return end
-
-    if debounce[humanoid] then return end
-
-    debounce[humanoid] = true
-
-    humanoid.Health = 0
-
-    task.delay(1, function()
-        debounce[humanoid] = nil
-    end)
-
+    if humanoid then
+        humanoid.Health = 0
+    end
 end)
-`
-        },
+`,
 
-        checkpoint: {
-            title: "نظام نقاط الحفظ",
-            location: "Workspace > Checkpoint Part > Script",
-            code: `-- GAMEDEV AI | Checkpoint System
--- Put this Script inside every checkpoint Part
+    checkpoint: `--[ GAMEDEV AI | CHECKPOINT ]--
 
 local checkpoint = script.Parent
 
 checkpoint.Touched:Connect(function(hit)
-
-    local character = hit:FindFirstAncestorOfClass("Model")
-    if not character then return end
-
+    local character = hit.Parent
     local player = game.Players:GetPlayerFromCharacter(character)
+
     if not player then return end
 
-    local current = player:GetAttribute("Checkpoint")
-
-    if current == checkpoint.Name then
-        return
-    end
-
-    player:SetAttribute("Checkpoint", checkpoint.Name)
-
-    print(player.Name .. " reached " .. checkpoint.Name)
-
+    player:SetAttribute("Checkpoint", checkpoint.Position)
 end)
-`
-        },
+`,
 
-        rebirth: {
-            title: "نظام إعادة الميلاد",
-            location: "ServerScriptService > Script",
-            code: `-- GAMEDEV AI | Rebirth System
--- ServerScriptService
+    tool: `--[ GAMEDEV AI | TOOL ]--
+
+local tool = script.Parent
+
+tool.Activated:Connect(function()
+    print("Tool activated:", tool.Name)
+end)
+`,
+
+    teleport: `--[ GAMEDEV AI | TELEPORT PART ]--
+
+local Players = game:GetService("Players")
+local destination = workspace:WaitForChild("Destination")
+local part = script.Parent
+
+part.Touched:Connect(function(hit)
+    local character = hit.Parent
+    local player = Players:GetPlayerFromCharacter(character)
+
+    if not player then return end
+
+    local root = character:FindFirstChild("HumanoidRootPart")
+
+    if root then
+        root.CFrame = destination.CFrame + Vector3.new(0, 4, 0)
+    end
+end)
+`,
+
+    rebirth: `--[ GAMEDEV AI | REBIRTH SYSTEM ]--
 
 local Players = game:GetService("Players")
 
-local BASE_REQUIREMENT = 1000
-
-local function getRequirement(rebirths)
-    return BASE_REQUIREMENT * (rebirths + 1)
-end
-
 Players.PlayerAdded:Connect(function(player)
-
-    local stats = Instance.new("Folder")
-    stats.Name = "leaderstats"
-    stats.Parent = player
-
-    local power = Instance.new("IntValue")
-    power.Name = "Power"
-    power.Value = 0
-    power.Parent = stats
+    local stats = player:WaitForChild("leaderstats")
+    local power = stats:WaitForChild("Power")
 
     local rebirths = Instance.new("IntValue")
     rebirths.Name = "Rebirths"
     rebirths.Value = 0
     rebirths.Parent = stats
-
 end)
 
-local function Rebirth(player)
+-- تحقق من متطلبات Rebirth في السيرفر
+-- لا تسمح للعميل بتحديد المكافآت
+`,
 
+    datastore: `--[ GAMEDEV AI | DATASTORE ]--
+
+local DataStoreService = game:GetService("DataStoreService")
+local Players = game:GetService("Players")
+
+local store = DataStoreService:GetDataStore("PlayerData_V1")
+
+local function savePlayer(player)
+    local data = {
+        Coins = player:GetAttribute("Coins") or 0
+    }
+
+    local success, err = pcall(function()
+        store:SetAsync("Player_" .. player.UserId, data)
+    end)
+
+    if not success then
+        warn("Save error:", err)
+    end
+end
+
+local function loadPlayer(player)
+    local success, data = pcall(function()
+        return store:GetAsync("Player_" .. player.UserId)
+    end)
+
+    if success and data then
+        player:SetAttribute("Coins", data.Coins or 0)
+    else
+        player:SetAttribute("Coins", 0)
+    end
+end
+
+Players.PlayerAdded:Connect(loadPlayer)
+Players.PlayerRemoving:Connect(savePlayer)
+
+game:BindToClose(function()
+    for _, player in ipairs(Players:GetPlayers()) do
+        savePlayer(player)
+    end
+end)
+`,
+
+    round: `--[ GAMEDEV AI | ROUND SYSTEM BASE ]--
+
+local Players = game:GetService("Players")
+
+local MIN_PLAYERS = 2
+local INTERMISSION = 15
+local ROUND_TIME = 120
+
+while true do
+    while #Players:GetPlayers() < MIN_PLAYERS do
+        task.wait(2)
+    end
+
+    for timer = INTERMISSION, 1, -1 do
+        print("Starting in:", timer)
+        task.wait(1)
+    end
+
+    print("ROUND START")
+
+    for timer = ROUND_TIME, 1, -1 do
+        if #Players:GetPlayers() < MIN_PLAYERS then
+            break
+        end
+
+        print("Time remaining:", timer)
+        task.wait(1)
+    end
+
+    print("ROUND END")
+    task.wait(5)
+end
+`,
+
+    ui: `--[ GAMEDEV AI | GUI BUTTON ]--
+
+local button = script.Parent
+
+button.Activated:Connect(function()
+    print("Button pressed!")
+end)
+`,
+
+    npc: `--[ GAMEDEV AI | NPC MOVEMENT BASE ]--
+
+local npc = script.Parent
+local humanoid = npc:WaitForChild("Humanoid")
+
+local points = workspace:WaitForChild("NPCPoints"):GetChildren()
+
+while #points > 0 do
+    local point = points[math.random(1, #points)]
+
+    humanoid:MoveTo(point.Position)
+    humanoid.MoveToFinished:Wait()
+
+    task.wait(1)
+end
+`,
+
+    pet: `--[ GAMEDEV AI | PET FOLLOW BASE ]--
+
+local Players = game:GetService("Players")
+local pet = script.Parent
+
+local function followPlayer(player)
+    local character = player.Character
+    if not character then return end
+
+    local root = character:FindFirstChild("HumanoidRootPart")
+    local petRoot = pet.PrimaryPart
+
+    if root and petRoot then
+        petRoot.CFrame = root.CFrame * CFrame.new(3, 0, 3)
+    end
+end
+
+Players.PlayerAdded:Connect(function(player)
+    player.CharacterAdded:Connect(function()
+        task.wait(2)
+        followPlayer(player)
+    end)
+end)
+`,
+
+    shop: `--[ GAMEDEV AI | SHOP SYSTEM BASE ]--
+
+local Players = game:GetService("Players")
+
+local function purchase(player, itemName, price)
     local stats = player:FindFirstChild("leaderstats")
-    if not stats then return false end
+    local coins = stats and stats:FindFirstChild("Coins")
 
-    local power = stats:FindFirstChild("Power")
-    local rebirths = stats:FindFirstChild("Rebirths")
+    if not coins then return false end
+    if coins.Value < price then return false end
 
-    if not power or not rebirths then
-        return false
-    end
+    coins.Value -= price
 
-    local requirement = getRequirement(rebirths.Value)
-
-    if power.Value < requirement then
-        return false
-    end
-
-    power.Value = 0
-    rebirths.Value += 1
+    print(player.Name, "purchased", itemName)
 
     return true
 end
 
--- Connect Rebirth to a server-validated RemoteEvent
--- Never allow the client to decide the reward.
+-- نفّذ عمليات الشراء من السيرفر
+-- أضف التحقق من RemoteEvent عند ربط GUI
+`,
+
+    generic: `--[ GAMEDEV AI | NEW SCRIPT ]--
+
+local Players = game:GetService("Players")
+
+-- اكتب وظيفة السكربت هنا
+
+print("GAMEDEV AI script initialized")
+
+-- TODO: Add your game logic
 `
-        },
+};
 
-        door: {
-            title: "باب يحتاج عملات",
-            location: "Workspace > Door > Script",
-            code: `-- GAMEDEV AI | Coins Door
+function detectScriptType(text) {
+    const value = (text || "").toLowerCase();
 
-local door = script.Parent
+    if (/سرع|speed/.test(value)) return "speed";
+    if (/فلوس|مال|money|cash|coin/.test(value)) return "money";
+    if (/leaderstat|leaderstats|احصائ/.test(value)) return "leaderstats";
+    if (/باب|door/.test(value)) return "door";
+    if (/قتل|kill|موت|ضرر/.test(value)) return "kill";
+    if (/checkpoint|نقطة حفظ|نقطه حفظ/.test(value)) return "checkpoint";
+    if (/tool|اداة|أداة/.test(value)) return "tool";
+    if (/teleport|انتقال|نقل لاعب/.test(value)) return "teleport";
+    if (/rebirth|ريبرث|إعادة الولادة/.test(value)) return "rebirth";
+    if (/data|حفظ|داتا/.test(value)) return "datastore";
+    if (/round|جولة|راوند/.test(value)) return "round";
+    if (/gui|واجهة|زر/.test(value)) return "ui";
+    if (/npc|شخصية|بوت/.test(value)) return "npc";
+    if (/pet|حيوان|مرافق/.test(value)) return "pet";
+    if (/shop|متجر|شراء/.test(value)) return "shop";
 
-local REQUIRED_COINS = 100
-local opened = false
+    return "generic";
+}
 
-door.Touched:Connect(function(hit)
+function generateScript() {
+    const category = $("scriptCategory")?.value || "generic";
+    const details = $("scriptDetails")?.value || "";
 
-    if opened then return end
+    const type = category === "custom"
+        ? detectScriptType(details)
+        : category;
 
-    local character = hit:FindFirstAncestorOfClass("Model")
-    if not character then return end
+    const code = ScriptTemplates[type] || ScriptTemplates.generic;
 
-    local player = game.Players:GetPlayerFromCharacter(character)
-    if not player then return end
+    const output = $("codeEditor");
+    if (output) output.value = code;
 
-    local stats = player:FindFirstChild("leaderstats")
-    if not stats then return end
+    updateLineNumbers();
+    updateEditorStatus();
+    toast("تم إنشاء السكربت");
+}
 
-    local coins = stats:FindFirstChild("Coins")
-    if not coins then return end
+function updateLineNumbers() {
+    const editor = $("codeEditor");
+    const lineNumbers = $("lineNumbers");
 
-    if coins.Value < REQUIRED_COINS then
-        return
-    end
+    if (!editor || !lineNumbers) return;
 
-    coins.Value -= REQUIRED_COINS
-    opened = true
+    const count = Math.max(1, editor.value.split("\n").length);
 
-    door.CanCollide = false
-    door.Transparency = 0.6
+    lineNumbers.innerHTML = Array.from(
+        { length: count },
+        (_, i) => `<div>${i + 1}</div>`
+    ).join("");
 
-    task.wait(3)
+    lineNumbers.scrollTop = editor.scrollTop;
+}
 
-    door.CanCollide = true
-    door.Transparency = 0
-    opened = false
+function updateEditorStatus() {
+    const editor = $("codeEditor");
+    const status = $("editorStatus");
 
-end)
-`
-        }
+    if (!editor || !status) return;
 
-    };
+    status.textContent = `${editor.value.split("\n").length} Lines • Lua`;
+}
 
+function copyCode() {
+    copyText($("codeEditor")?.value || "");
+}
 
-    /* =====================================================
-       06 - SCRIPT REQUEST ANALYSIS
-    ===================================================== */
+function downloadCode() {
+    const code = $("codeEditor")?.value || "";
 
-    function generateScriptAnswer(message) {
-
-        const text = normalize(message);
-
-        let selected = null;
-
-        if (includesAny(text, [
-            "عملات",
-            "فلوس",
-            "كوين",
-            "coins",
-            "money",
-            "leaderstats"
-        ])) {
-            selected = SCRIPT_TEMPLATES.coins;
-        }
-
-        else if (includesAny(text, [
-            "سرعه",
-            "speed",
-            "زيادة السرعه",
-            "بوست"
-        ])) {
-            selected = SCRIPT_TEMPLATES.speed;
-        }
-
-        else if (includesAny(text, [
-            "قتل",
-            "kill brick",
-            "killbrick",
-            "يموت"
-        ])) {
-            selected = SCRIPT_TEMPLATES.killbrick;
-        }
-
-        else if (includesAny(text, [
-            "checkpoint",
-            "نقطه حفظ",
-            "نقاط الحفظ",
-            "حفظ التقدم"
-        ])) {
-            selected = SCRIPT_TEMPLATES.checkpoint;
-        }
-
-        else if (includesAny(text, [
-            "rebirth",
-            "ريبرث",
-            "اعادة الميلاد"
-        ])) {
-            selected = SCRIPT_TEMPLATES.rebirth;
-        }
-
-        else if (includesAny(text, [
-            "باب",
-            "door",
-            "يفتح الباب"
-        ])) {
-            selected = SCRIPT_TEMPLATES.door;
-        }
-
-        if (!selected) {
-            return `
-أقدر أساعدك في إنشاء هذا النظام! 🔥
-
-لكن أحتاج تحديد نوعه بشكل أدق.
-
-أمثلة على الأنظمة المدعومة في المحرك حاليًا:
-
-1. نظام العملات.
-2. نظام السرعة.
-3. بلوك القتل.
-4. نظام نقاط الحفظ.
-5. نظام Rebirth.
-6. باب يحتاج عملات.
-
-اكتب اسم النظام المطلوب وسأجهز لك قالبًا برمجيًا مع مكان تركيبه.
-
-ملاحظة: هذه قوالب أولية وليست نظامًا متكاملًا بكل الوظائف الإضافية.
-`;
-        }
-
-        return `
-🚀 GAMEDEV AI ULTRA X
-━━━━━━━━━━━━━━━━━━━━
-
-💻 النظام: ${selected.title}
-
-📁 مكان التركيب:
-${selected.location}
-
-━━━━━━━━━━━━━━━━━━━━
-
-📜 الكود:
-
-\`\`\`lua
-${selected.code}
-\`\`\`
-
-━━━━━━━━━━━━━━━━━━━━
-
-⚠️ تعليمات:
-1. أنشئ العناصر المطلوبة في Explorer.
-2. ضع السكربت في المكان المحدد.
-3. راجع أسماء العناصر.
-4. اختبر النظام في Roblox Studio.
-
-تم إنشاء قالب برمجي محلي.
-`;
+    if (!code.trim()) {
+        toast("أنشئ سكربت أولاً", "error");
+        return;
     }
 
-
-    /* =====================================================
-       07 - IDEA GENERATOR
-    ===================================================== */
-
-    function generateIdea() {
-
-        const idea = randomItem(KNOWLEDGE.ideas);
-
-        return `
-💡 فكرة لعبتك الجديدة
-━━━━━━━━━━━━━━━━━━━━
-
-🎮 ${idea.name}
-
-📝 الوصف:
-${idea.description}
-
-⚙️ الأنظمة المقترحة:
-
-${idea.features.map((item, index) =>
-    `${index + 1}. ${item}`
-).join("\n")}
-
-━━━━━━━━━━━━━━━━━━━━
-
-🚀 اقتراح GAMEDEV AI:
-
-ابدأ بنظام أساسي واحد، ثم أضف الأنظمة تدريجيًا واختبر كل نظام قبل الانتقال للذي بعده.
-`;
-    }
-
-
-    /* =====================================================
-       08 - GUI PLANNER
-    ===================================================== */
-
-    function generateGUI(message) {
-
-        const text = normalize(message);
-
-        let name = "واجهة لعبتك";
-        let hierarchy = [];
-
-        if (includesAny(text, ["متجر", "shop", "شراء"])) {
-
-            name = "واجهة المتجر";
-
-            hierarchy = [
-                "ScreenGui",
-                "└── ShopFrame",
-                "    ├── Header",
-                "    │   ├── Title",
-                "    │   └── CloseButton",
-                "    ├── CoinsLabel",
-                "    ├── ItemsContainer",
-                "    │   ├── ItemCard",
-                "    │   └── BuyButton",
-                "    └── UIListLayout"
-            ];
-
-        } else if (includesAny(text, ["وظائف", "job"])) {
-
-            name = "واجهة الوظائف";
-
-            hierarchy = [
-                "ScreenGui",
-                "└── JobsFrame",
-                "    ├── Header",
-                "    ├── CloseButton",
-                "    ├── JobsContainer",
-                "    │   ├── JobCard",
-                "    │   ├── JobName",
-                "    │   └── ApplyButton",
-                "    └── UIGridLayout"
-            ];
-
-        } else {
-
-            hierarchy = [
-                "ScreenGui",
-                "└── MainFrame",
-                "    ├── Header",
-                "    │   ├── Title",
-                "    │   └── CloseButton",
-                "    ├── ContentFrame",
-                "    ├── MainButton",
-                "    ├── StatusLabel",
-                "    └── UIListLayout"
-            ];
-        }
-
-        return `
-🎨 مخطط ${name}
-
-📁 Explorer Hierarchy:
-
-${hierarchy.join("\n")}
-
-━━━━━━━━━━━━━━━━━━━━
-
-اقتراحات التصميم:
-
-1. استخدم UIStroke لإضافة حدود.
-2. استخدم UICorner لتدوير الزوايا.
-3. استخدم UIGradient للتدرجات.
-4. استخدم UIListLayout لترتيب العناصر.
-5. استخدم AutomaticSize عند الحاجة.
-
-📱 اجعل الواجهة تدعم الجوال والكمبيوتر.
-`;
-    }
-
-
-    /* =====================================================
-       09 - ERROR ANALYZER
-    ===================================================== */
-
-    function analyzeError(message) {
-
-        const text = normalize(message);
-
-        const problems = [
-
-            {
-                keywords: ["attempt to index nil", "nil value"],
-                title: "محاولة استخدام قيمة nil",
-                explanation: `
-هذا الخطأ يعني أنك تحاول الوصول إلى خاصية داخل قيمة غير موجودة.
-
-أسباب محتملة:
-- اسم العنصر غير صحيح.
-- العنصر لم يتم إنشاؤه بعد.
-- الكائن غير موجود في المكان المتوقع.
-
-الحل:
-استخدم FindFirstChild أو WaitForChild حسب الحاجة، وتحقق من وجود الكائن قبل استخدامه.
-`
-            },
-
-            {
-                keywords: ["infinite yield", "possible infinite yield"],
-                title: "انتظار عنصر لم يظهر",
-                explanation: `
-غالبًا السكربت ينتظر عنصرًا لم يتم إنشاؤه أو اسمه غير صحيح.
-
-راجع:
-- اسم العنصر.
-- مكانه في Explorer.
-- هل يتم إنشاؤه قبل طلبه؟
-- هل يستخدم WaitForChild على العنصر الصحيح؟
-`
-            },
-
-            {
-                keywords: ["syntax error", "expected", "unexpected symbol"],
-                title: "خطأ في صياغة الكود",
-                explanation: `
-يوجد احتمال أن الكود يحتوي على:
-- قوس ناقص.
-- علامة اقتباس غير مكتملة.
-- كلمة محجوزة في مكان غير صحيح.
-- نهاية تعبير غير مكتملة.
-
-راجع السطر المشار إليه في رسالة الخطأ.
-`
-            },
-
-            {
-                keywords: ["attempt to call", "not a function"],
-                title: "محاولة تشغيل شيء ليس دالة",
-                explanation: `
-تأكد من اسم الدالة وطريقة استدعائها.
-
-قد تكون:
-- نسيت تعريف الدالة.
-- استخدمت متغيرًا مكان الدالة.
-- كتبت اسم الدالة بشكل مختلف.
-`
-            },
-
-            {
-                keywords: ["datastore", "403", "api services"],
-                title: "مشكلة في DataStore",
-                explanation: `
-تحقق من:
-- تفعيل إعدادات API Services عند الاختبار في Studio.
-- تشغيل اللعبة في بيئة منشورة.
-- استخدام DataStore داخل Script على السيرفر.
-- معالجة الأخطاء باستخدام pcall.
-`
-            },
-
-            {
-                keywords: ["remoteevent", "fireserver", "onserverevent"],
-                title: "مشكلة في RemoteEvent",
-                explanation: `
-تأكد من:
-- وجود RemoteEvent في المكان المتوقع.
-- تطابق الاسم بين السيرفر والعميل.
-- استخدام FireServer من LocalScript.
-- استقبال الطلب عبر OnServerEvent داخل Script.
-- التحقق من البيانات داخل السيرفر.
-`
-            }
-
-        ];
-
-        const found = problems.find(problem =>
-            problem.keywords.some(keyword => text.includes(keyword))
-        );
-
-        if (found) {
-            return `
-🔧 تحليل الخطأ
-
-المشكلة المحتملة:
-${found.title}
-
-${found.explanation}
-
-━━━━━━━━━━━━━━━━━━━━
-
-أرسل رسالة الخطأ كاملة والكود المحيط بها للحصول على تحليل أدق.
-`;
-        }
-
-        return `
-🔍 لم أتمكن من تحديد الخطأ بدقة.
-
-أحتاج منك:
-1. رسالة الخطأ كاملة من Output.
-2. الكود الذي سبب المشكلة.
-3. نوع السكربت.
-4. مكان السكربت داخل Explorer.
-
-سأساعدك في تحديد السبب المحتمل.
-
-ملاحظة: التحليل المحلي يعطي إرشادات أولية ولا يشغّل الكود أو يضمن اكتشاف جميع الأخطاء.
-`;
-    }
-
-
-    /* =====================================================
-       10 - EXPLANATION ENGINE
-    ===================================================== */
-
-    function explainTopic(message) {
-
-        const text = normalize(message);
-
-        if (includesAny(text, ["datastore", "حفظ البيانات"])) {
-            return KNOWLEDGE.topics.datastore;
-        }
-
-        if (includesAny(text, ["remoteevent", "remote event", "ريموت"])) {
-            return KNOWLEDGE.topics.remote;
-        }
-
-        if (includesAny(text, ["leaderstats", "احصائيات"])) {
-            return KNOWLEDGE.topics.leaderstats;
-        }
-
-        if (includesAny(text, ["localscript", "لوكال"])) {
-            return KNOWLEDGE.topics.local;
-        }
-
-        if (includesAny(text, ["serverscript", "script", "سيرفر"])) {
-            return KNOWLEDGE.topics.server;
-        }
-
-        if (includesAny(text, ["modulescript", "module", "موديول"])) {
-            return KNOWLEDGE.topics.module;
-        }
-
-        if (includesAny(text, ["tween", "حركه سلسه"])) {
-            return KNOWLEDGE.topics.tween;
-        }
-
-        if (includesAny(text, ["humanoid", "سرعه اللاعب"])) {
-            return KNOWLEDGE.topics.humanoid;
-        }
-
-        return `
-📚 أقدر أشرح لك أساسيات Roblox وLuau.
-
-اختر موضوعًا مثل:
-
-1. DataStore.
-2. RemoteEvent.
-3. Leaderstats.
-4. LocalScript.
-5. ServerScript.
-6. ModuleScript.
-7. TweenService.
-8. Humanoid.
-
-اكتب اسم الموضوع وسأشرح لك المعلومات المتوفرة في قاعدة المعرفة.
-`;
-    }
-
-
-    /* =====================================================
-       11 - GENERAL RESPONSE ENGINE
-    ===================================================== */
-
-    function generateResponse(message) {
-
-        const text = String(message || "").trim();
-        const normalized = normalize(text);
-
-        if (!text) {
-            return "اكتب طلبك أولًا يا مطور! 🚀";
-        }
-
-        const intent = detectIntent(text);
-
-        switch (intent) {
-
-            case "greeting":
-                return randomItem(KNOWLEDGE.greetings);
-
-            case "idea":
-                return generateIdea();
-
-            case "script":
-                return generateScriptAnswer(text);
-
-            case "gui":
-                return generateGUI(text);
-
-            case "debug":
-                return analyzeError(text);
-
-            case "explain":
-                return explainTopic(text);
-
-            case "optimize":
-                return `
-⚡ تحسين أداء السكربتات
-
-أهم النصائح:
-
-1. تجنب الحلقات التي تعمل دون انتظار.
-2. لا تكرر عمليات البحث عن العناصر دون حاجة.
-3. استخدم الأحداث بدل الفحص المستمر.
-4. افصل منطق السيرفر عن العميل.
-5. استخدم ModuleScripts لتنظيم المشاريع.
-6. عالج الأخطاء المتوقعة.
-7. راقب الأداء أثناء الاختبار.
-
-أرسل السكربت الذي تريد تحسينه للحصول على مراجعة أولية.
-`;
-
-            default:
-
-                if (includesAny(normalized, [
-                    "roblox",
-                    "روبلوكس",
-                    "luau",
-                    "برمجه"
-                ])) {
-                    return `
-🎮 أهلًا بك في GAMEDEV AI ULTRA X!
-
-أستطيع مساعدتك في:
-
-💻 كتابة سكربتات Roblox.
-💡 ابتكار أفكار مابات.
-🎨 تخطيط واجهات GUI.
-🔧 تحليل أخطاء البرمجة.
-📚 شرح Luau.
-⚙️ تصميم أنظمة الألعاب.
-
-اكتب طلبك بالتفصيل، وسنبدأ بتحليله.
-`;
-                }
-
-                return `
-وصلني طلبك! 🚀
-
-لكن أحتاج تفاصيل أكثر حتى أساعدك بدقة.
-
-وضح لي:
-- ماذا تريد أن تنشئ؟
-- هل تعمل على Roblox Studio؟
-- هل تريد سكربتًا أم فكرة أم شرحًا؟
-- هل لديك كود حالي تريد تطويره؟
-
-أنا جاهز لمساعدتك في تطوير مشروعك.
-`;
-        }
-    }
-
-
-    /* =====================================================
-       12 - CHAT STORAGE
-    ===================================================== */
-
-    let chatHistory = loadData(
-        CONFIG.storage.chat,
-        []
-    );
-
-    if (!Array.isArray(chatHistory)) {
-        chatHistory = [];
-    }
-
-    function saveChat() {
-        chatHistory = chatHistory.slice(-CONFIG.maxMessages);
-        saveData(CONFIG.storage.chat, chatHistory);
-    }
-
-
-    /* =====================================================
-       13 - CHAT INTERFACE
-    ===================================================== */
-
-    function renderMessage(role, text, save = true) {
-
-        if (!chatMessages) return;
-
-        const isUser = role === "user";
-
-        const message = document.createElement("div");
-
-        message.className = isUser
-            ? "message user-message"
-            : "message bot-message";
-
-        const avatar = document.createElement("div");
-        avatar.className = "message-avatar";
-        avatar.textContent = isUser ? "U" : "G";
-
-        const content = document.createElement("div");
-        content.className = "message-content";
-
-        const heading = document.createElement("strong");
-        heading.textContent = isUser ? "أنت" : "GAMEDEV AI";
-
-        const paragraph = document.createElement("p");
-
-        // النص يعرض كنص عادي لحماية الصفحة من HTML غير الموثوق.
-        paragraph.textContent = text;
-
-        content.appendChild(heading);
-        content.appendChild(paragraph);
-
-        message.appendChild(avatar);
-        message.appendChild(content);
-
-        chatMessages.appendChild(message);
-
-        chatMessages.scrollTop = chatMessages.scrollHeight;
-
-        if (save) {
-            chatHistory.push({
-                role,
-                text,
-                time: Date.now()
-            });
-
-            saveChat();
-        }
-    }
-
-    function restoreChat() {
-
-        if (!chatMessages) return;
-
-        chatMessages.innerHTML = "";
-
-        if (chatHistory.length === 0) {
-            renderMessage(
-                "bot",
-                "أهلًا بك في GAMEDEV AI ULTRA X! 🚀 اكتب طلبك ونبدأ التطوير.",
-                false
-            );
-
-            return;
-        }
-
-        chatHistory.forEach(item => {
-            renderMessage(item.role, item.text, false);
-        });
-    }
-
-    function sendMessage(message) {
-
-        const text = String(message || "").trim();
-
-        if (!text) return;
-
-        renderMessage("user", text);
-
-        if (chatInput) {
-            chatInput.value = "";
-            chatInput.style.height = "auto";
-        }
-
-        const response = generateResponse(text);
-
-        setTimeout(() => {
-            renderMessage("bot", response);
-        }, 350);
-    }
-
-    if (chatForm) {
-
-        chatForm.addEventListener("submit", event => {
-
-            event.preventDefault();
-
-            sendMessage(chatInput ? chatInput.value : "");
-
-        });
-
-    }
-
-    if (chatInput) {
-
-        chatInput.addEventListener("keydown", event => {
-
-            if (
-                event.key === "Enter" &&
-                !event.shiftKey &&
-                window.innerWidth > 600
-            ) {
-                event.preventDefault();
-
-                if (chatForm) {
-                    chatForm.requestSubmit();
-                }
-            }
-
-        });
-
-        chatInput.addEventListener("input", () => {
-
-            chatInput.style.height = "auto";
-
-            chatInput.style.height =
-                Math.min(chatInput.scrollHeight, 130) + "px";
-
-        });
-
-    }
-
-    const clearChatButton = $("#clearChat");
-
-    if (clearChatButton) {
-
-        clearChatButton.addEventListener("click", () => {
-
-            const confirmed = window.confirm(
-                "هل تريد مسح المحادثة بالكامل؟"
-            );
-
-            if (!confirmed) return;
-
-            chatHistory = [];
-
-            saveChat();
-
-            restoreChat();
-
-            showToast("تم مسح المحادثة");
-
-        });
-
-    }
-
-
-    /* =====================================================
-       14 - QUICK PROMPTS
-    ===================================================== */
-
-    window.usePrompt = function(text) {
-
-        if (!chatInput) return;
-
-        chatInput.value = text;
-
-        chatInput.focus();
-
-        if (chatForm) {
-            chatForm.requestSubmit();
-        }
-
-    };
-
-
-    /* =====================================================
-       15 - CODE EDITOR
-    ===================================================== */
-
-    window.copyCode = async function() {
-
-        if (!codeEditor) {
-            showToast("محرر الأكواد غير موجود");
-            return;
-        }
-
-        const code = codeEditor.value;
-
-        if (!code.trim()) {
-            showToast("المحرر فارغ");
-            return;
-        }
-
-        try {
-
-            await navigator.clipboard.writeText(code);
-
-            showToast("تم نسخ الكود بنجاح 📋");
-
-        } catch (error) {
-
-            codeEditor.select();
-
-            try {
-                document.execCommand("copy");
-                showToast("تم نسخ الكود");
-            } catch {
-                showToast("تعذر النسخ، انسخ الكود يدويًا");
-            }
-
-        }
-
-    };
-
-    window.downloadCode = function() {
-
-        if (!codeEditor || !codeEditor.value.trim()) {
-            showToast("لا يوجد كود لتحميله");
-            return;
-        }
-
-        const blob = new Blob(
-            [codeEditor.value],
-            { type: "text/plain;charset=utf-8" }
-        );
-
-        const url = URL.createObjectURL(blob);
-
-        const link = document.createElement("a");
-
-        link.href = url;
-        link.download = "gamedev-script.lua";
-
-        document.body.appendChild(link);
-
-        link.click();
-        link.remove();
-
-        URL.revokeObjectURL(url);
-
-        showToast("تم تجهيز ملف Lua");
-
-    };
-
-    window.clearCode = function() {
-
-        if (!codeEditor) return;
-
-        if (!codeEditor.value.trim()) {
-            showToast("المحرر فارغ");
-            return;
-        }
-
-        if (!confirm("هل تريد مسح الكود؟")) return;
-
-        codeEditor.value = "";
-
-        showToast("تم مسح المحرر");
-
-    };
-
-
-    /* =====================================================
-       16 - PROJECT MANAGER
-    ===================================================== */
-
-    let projects = loadData(
-        CONFIG.storage.projects,
-        []
-    );
-
-    if (!Array.isArray(projects)) {
-        projects = [];
-    }
-
-    function renderProjects() {
-
-        if (!projectsList) return;
-
-        projectsList.innerHTML = "";
-
-        if (projects.length === 0) {
-
-            const empty = document.createElement("div");
-
-            empty.className = "empty-state";
-            empty.textContent = "🚀 لا توجد مشاريع حتى الآن. أضف مشروعك الأول!";
-
-            projectsList.appendChild(empty);
-
-            return;
-        }
-
-        projects.forEach(project => {
-
-            const card = document.createElement("article");
-
-            card.className = "project-card";
-
-            const title = document.createElement("h3");
-            title.textContent = project.name;
-
-            const description = document.createElement("p");
-            description.textContent = project.description;
-
-            const date = document.createElement("small");
-            date.textContent = project.date || "";
-
-            date.style.color = "var(--muted)";
-            date.style.display = "block";
-            date.style.marginTop = "10px";
-
-            const deleteButton = document.createElement("button");
-
-            deleteButton.textContent = "حذف المشروع";
-
-            deleteButton.addEventListener("click", () => {
-                deleteProject(project.id);
-            });
-
-            card.appendChild(title);
-            card.appendChild(description);
-            card.appendChild(date);
-            card.appendChild(deleteButton);
-
-            projectsList.appendChild(card);
-
-        });
-
-    }
-
-    window.addProject = function() {
-
-        const nameInput = $("#projectName");
-        const descriptionInput = $("#projectDescription");
-
-        if (!nameInput || !descriptionInput) return;
-
-        const name = nameInput.value.trim();
-        const description = descriptionInput.value.trim();
-
-        if (!name) {
-            showToast("اكتب اسم المشروع");
-            nameInput.focus();
-            return;
-        }
-
-        if (!description) {
-            showToast("اكتب وصف المشروع");
-            descriptionInput.focus();
-            return;
-        }
-
-        const project = {
-            id: Date.now() + Math.random(),
-            name,
-            description,
-            date: new Date().toLocaleDateString("ar-SA")
-        };
-
-        projects.unshift(project);
-
-        if (!saveData(CONFIG.storage.projects, projects)) {
-            projects.shift();
-            return;
-        }
-
-        renderProjects();
-
-        nameInput.value = "";
-        descriptionInput.value = "";
-
-        showToast("تمت إضافة المشروع بنجاح 🚀");
-
-    };
-
-    function deleteProject(id) {
-
-        if (!confirm("هل تريد حذف هذا المشروع؟")) return;
-
-        const previous = projects;
-
-        projects = projects.filter(
-            project => project.id !== id
-        );
-
-        if (!saveData(CONFIG.storage.projects, projects)) {
-            projects = previous;
-            return;
-        }
-
-        renderProjects();
-
-        showToast("تم حذف المشروع");
-
-    }
-
-
-    /* =====================================================
-       17 - TOOL NAVIGATION
-    ===================================================== */
-
-    window.openTool = function(type) {
-
-        const tools = {
-            script: {
-                prompt: "أريد إنشاء سكربت Roblox جديد."
-            },
-
-            ideas: {
-                prompt: "أعطني فكرة ماب Roblox احترافية."
-            },
-
-            gui: {
-                prompt: "أريد تخطيط واجهة GUI للعبتي."
-            },
-
-            errors: {
-                prompt: "أريد تحليل خطأ برمجي في Roblox."
-            }
-        };
-
-        const tool = tools[type];
-
-        if (!tool) return;
-
-        const assistant = $("#assistant");
-
-        if (assistant) {
-            assistant.scrollIntoView({
-                behavior: "smooth",
-                block: "start"
-            });
-        }
-
-        setTimeout(() => {
-            window.usePrompt(tool.prompt);
-        }, 400);
-
-    };
-
-
-    /* =====================================================
-       18 - THEME SYSTEM
-    ===================================================== */
-
-    const themeButton = $("#themeToggle");
-
-    function applyTheme(theme) {
-
-        document.body.classList.toggle(
-            "light-theme",
-            theme === "light"
-        );
-
-        if (themeButton) {
-            themeButton.textContent =
-                theme === "light" ? "☀️" : "🌙";
-        }
-
-        try {
-            localStorage.setItem(CONFIG.storage.theme, theme);
-        } catch (error) {
-            console.warn("Theme could not be saved");
-        }
-
-    }
-
-    const savedTheme = (() => {
-        try {
-            return localStorage.getItem(CONFIG.storage.theme);
-        } catch {
-            return null;
-        }
-    })();
-
-    applyTheme(savedTheme || "dark");
-
-    if (themeButton) {
-
-        themeButton.addEventListener("click", () => {
-
-            const isLight =
-                document.body.classList.contains("light-theme");
-
-            applyTheme(isLight ? "dark" : "light");
-
-        });
-
-    }
-
-
-    /* =====================================================
-       19 - KEYBOARD SHORTCUTS
-    ===================================================== */
-
-    document.addEventListener("keydown", event => {
-
-        if (
-            (event.ctrlKey || event.metaKey) &&
-            event.key.toLowerCase() === "enter"
-        ) {
-            if (chatInput && document.activeElement === chatInput) {
-                event.preventDefault();
-
-                if (chatForm) {
-                    chatForm.requestSubmit();
-                }
-            }
-        }
-
+    const blob = new Blob([code], {
+        type: "text/plain;charset=utf-8"
     });
 
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
 
-    /* =====================================================
-       20 - PUBLIC ENGINE API
-    ===================================================== */
+    link.href = url;
+    link.download = "GAMEDEV_AI_Script.lua";
+    link.click();
 
-    window.GAMEDEV_AI = {
+    URL.revokeObjectURL(url);
+    toast("تم تحميل ملف Lua");
+}
 
-        name: CONFIG.name,
+/* ============================================================
+   IDE EDITOR
+============================================================ */
 
-        version: CONFIG.version,
+function initializeEditor() {
+    const editor = $("codeEditor");
 
-        ask: generateResponse,
+    if (!editor) return;
 
-        analyze: analyzeError,
+    editor.addEventListener("input", () => {
+        updateLineNumbers();
+        updateEditorStatus();
+    });
 
-        generateScript: generateScriptAnswer,
+    editor.addEventListener("scroll", updateLineNumbers);
 
-        generateIdea,
+    updateLineNumbers();
+    updateEditorStatus();
+}
 
-        generateGUI,
+/* ============================================================
+   IDEA GENERATOR
+============================================================ */
 
-        detectIntent,
+const Ideas = {
+    simulator: [
+        "محاكي بناء مدينة يبدأ اللاعب فيه من قطعة أرض صغيرة ويطورها إلى مدينة ضخمة.",
+        "محاكي جمع الطاقة: كل منطقة تحتوي مصادر طاقة نادرة وتطويرات مختلفة.",
+        "محاكي صناعة السيارات: اجمع القطع واصنع مركباتك ثم اختبرها.",
+        "محاكي مطعم: ابدأ بعربة طعام وطورها إلى سلسلة مطاعم."
+    ],
 
-        getStats() {
+    survival: [
+        "جزيرة تتغير كل ليلة وتظهر فيها تحديات وموارد جديدة.",
+        "عاصفة رملية تقترب كل عدة دقائق ويجب تجهيز الملجأ.",
+        "لاعبون عالقون في محطة مهجورة ويحتاجون جمع أجزاء للهروب.",
+        "مدينة غارقة ترتفع مياهها تدريجياً ويجب الانتقال إلى مناطق أعلى."
+    ],
 
-            return {
-                name: CONFIG.name,
-                version: CONFIG.version,
-                messages: chatHistory.length,
-                projects: projects.length,
-                templates: Object.keys(SCRIPT_TEMPLATES).length,
-                knowledgeTopics: Object.keys(KNOWLEDGE.topics).length
-            };
+    tycoon: [
+        "Tycoon بناء محطة فضاء مع أقسام إنتاج وطاقم.",
+        "Tycoon إدارة مدينة ألعاب وتطوير الألعاب والمرافق.",
+        "Tycoon إدارة شركة سيارات تبدأ بورشة صغيرة.",
+        "Tycoon بناء سوق عربي ضخم مع محلات قابلة للتطوير."
+    ],
 
-        },
+    horror: [
+        "فندق مهجور يحتوي طوابق تتغير كل مرة يدخل اللاعب.",
+        "مدرسة قديمة تختفي فيها الفصول بعد منتصف الليل.",
+        "قرية ضبابية يجب اكتشاف أسرارها قبل طلوع الشمس.",
+        "مستشفى مهجور يعمل فيه مصعد ينقلك إلى أماكن غريبة."
+    ],
 
-        clearChat() {
+    obby: [
+        "Obby فوق مدينة مستقبلية مع مسارات تختفي.",
+        "Obby داخل مصنع ضخم يتغير اتجاه الآلات.",
+        "Obby مراحل بألوان، ولكل لون قدرة مختلفة.",
+        "Obby داخل عالم عملاق من الأدوات اليومية."
+    ],
 
-            chatHistory = [];
+    roleplay: [
+        "مدينة خليجية فيها وظائف وتجارة ومنازل وتطوير وظيفي.",
+        "قرية شعبية فيها سوق ومزارع وورش وأسرار.",
+        "مدينة إعلامية فيها مذيعون ومصورون وصحف ومهام.",
+        "مدينة سياحية فيها مطار وفنادق ومناطق فعاليات."
+    ],
 
-            saveChat();
+    battleground: [
+        "ساحة معارك تتغير تضاريسها خلال القتال.",
+        "معركة فرق مع قدرات يتم اكتسابها من المناطق.",
+        "قتال في مدينة يمكن فتح الطرق وإغلاقها.",
+        "Arena تحتوي أحداثاً عشوائية وتحديات كل دقيقة."
+    ],
 
-            restoreChat();
+    custom: [
+        "عالم مفتوح مع مهام سرية وأماكن مخفية.",
+        "لعبة تطوير شخصية مع نظام سمعة ومهارات.",
+        "لعبة سباق مناطق متعددة مع تحديات جماعية.",
+        "لعبة استكشاف فيها آثار وألغاز وأدوات."
+    ]
+};
 
-        }
+function generateIdea() {
+    const category = $("ideaCategory")?.value || "custom";
+    const details = $("ideaDetails")?.value || "";
 
-    };
+    const pool = Ideas[category] || Ideas.custom;
+    const idea = pool[Math.floor(Math.random() * pool.length)];
 
+    const title = idea.split(":")[0].slice(0, 70);
 
-    /* =====================================================
-       21 - INITIALIZATION
-    ===================================================== */
+    const fullIdea = `
+🎮 الفكرة:
+${idea}
 
-    function initialize() {
+🗺️ تصميم الماب:
+• منطقة بداية واضحة.
+• مناطق تطوير تدريجية.
+• مكان خاص للمكافآت.
+• أماكن سرية للاستكشاف.
 
-        restoreChat();
+🎯 نظام اللعب:
+• مهام قصيرة ومتنوعة.
+• مكافآت على الإنجاز.
+• تطوير مستمر.
+• أهداف يومية.
 
-        renderProjects();
+⭐ إضافات مميزة:
+• أحداث عشوائية.
+• تحديات أسبوعية.
+• عناصر نادرة.
+• لوحة ترتيب اللاعبين.
 
-        console.log(
-            `%c ${CONFIG.name} V${CONFIG.version} READY `,
-            "background:#7c3aed;color:white;padding:10px;font-weight:bold;border-radius:8px;"
-        );
+🧩 تفاصيل طلبك:
+${details || "لم يتم تحديد تفاصيل إضافية."}
 
-        console.table(window.GAMEDEV_AI.getStats());
+🚀 اقتراح التطوير:
+ابدأ بنموذج صغير قابل للعب، ثم أضف المناطق والأنظمة تدريجياً.
+`;
 
+    const result = $("ideaResult");
+
+    if (result) {
+        result.innerHTML = `
+            <h3>${safeHTML(title)}</h3>
+            <pre>${safeHTML(fullIdea)}</pre>
+        `;
     }
 
-    initialize();
+    toast("تم توليد فكرة جديدة");
+}
 
-})();
-```
+/* ============================================================
+   GUI PLANNER
+============================================================ */
+
+const GUIPlans = {
+    shop: [
+        "واجهة متجر متكاملة",
+        "Header: اسم المتجر + رصيد اللاعب.",
+        "Categories: أدوات، قدرات، عناصر، ترقيات.",
+        "Item Card: صورة العنصر + الاسم + السعر + زر شراء.",
+        "Footer: زر إغلاق + تنبيه عند عدم كفاية الرصيد."
+    ],
+
+    inventory: [
+        "واجهة Inventory",
+        "Header: عنوان المخزون + عدد العناصر.",
+        "Grid: مربعات العناصر.",
+        "Details: وصف العنصر المحدد.",
+        "Actions: Equip / Unequip / Drop.",
+        "Footer: زر إغلاق."
+    ],
+
+    settings: [
+        "واجهة الإعدادات",
+        "Audio: صوت الموسيقى والمؤثرات.",
+        "Graphics: جودة العرض.",
+        "Gameplay: خيارات اللعب.",
+        "Controls: أزرار التحكم.",
+        "زر إعادة الضبط."
+    ],
+
+    leaderboard: [
+        "واجهة ترتيب اللاعبين",
+        "Header: أفضل اللاعبين.",
+        "Top 3: تصميم خاص للمراكز الثلاثة.",
+        "List: بقية اللاعبين.",
+        "Stats: Wins / Level / Coins.",
+        "زر تحديث الترتيب."
+    ],
+
+    loading: [
+        "واجهة تحميل",
+        "Logo: اسم اللعبة.",
+        "Progress Bar: نسبة التحميل.",
+        "Tips: نصائح تتغير.",
+        "Background: صورة أو عالم اللعبة.",
+        "Animation: انتقال تدريجي."
+    ],
+
+    hud: [
+        "واجهة HUD",
+        "Health Bar.",
+        "Cash / Coins.",
+        "Level / XP.",
+        "Quest Tracker.",
+        "Buttons: متجر، حقيبة، إعدادات."
+    ],
+
+    custom: [
+        "واجهة GUI مخصصة",
+        "Header: عنوان الواجهة.",
+        "Main Content: المحتوى الأساسي.",
+        "Buttons: أزرار التفاعل.",
+        "Footer: خيارات إضافية.",
+        "Animations: انتقالات ناعمة."
+    ]
+};
+
+function generateGUI() {
+    const category = $("guiCategory")?.value || "custom";
+    const details = $("guiDetails")?.value || "";
+
+    const plan = GUIPlans[category] || GUIPlans.custom;
+
+    const resultText = [
+        ...plan,
+        "",
+        "🎨 اقتراح الشكل:",
+        "• خلفية داكنة مع تدرج بنفسجي.",
+        "• زوايا مستديرة.",
+        "• حدود شفافة.",
+        "• تأثير Hover للأزرار.",
+        "• Animation عند فتح الواجهة.",
+        "",
+        "📌 تفاصيل إضافية:",
+        details || "لم يتم تحديد تفاصيل."
+    ].join("\n");
+
+    const result = $("guiResult");
+
+    if (result) {
+        result.innerHTML = `<pre>${safeHTML(resultText)}</pre>`;
+    }
+
+    toast("تم تجهيز مخطط الواجهة");
+}
+
+/* ============================================================
+   ERROR ANALYZER
+============================================================ */
+
+const ErrorKnowledge = [
+    {
+        match: ["attempt to index nil", "index nil"],
+        title: "Nil Error",
+        explanation: "تحاول استخدام عنصر أو متغير غير موجود أو قيمته nil.",
+        solutions: [
+            "تأكد من اسم العنصر.",
+            "استخدم WaitForChild عند الحاجة.",
+            "تأكد أن العنصر موجود في المكان الصحيح.",
+            "لا تستخدم العنصر قبل التأكد من وجوده."
+        ],
+        example: `local part = workspace:WaitForChild("Part")
+print(part.Name)`
+    },
+    {
+        match: ["infinite yield", "yield"],
+        title: "Infinite Yield Warning",
+        explanation: "السكربت ينتظر عنصرًا لم يظهر أو اسمه غير صحيح.",
+        solutions: [
+            "تأكد من اسم العنصر.",
+            "تأكد من مكانه داخل Explorer.",
+            "راجع مسار العنصر.",
+            "تأكد أن العنصر يتم إنشاؤه."
+        ],
+        example: `local object = workspace:WaitForChild("Part", 10)
+
+if not object then
+    warn("Part not found")
+end`
+    },
+    {
+        match: ["syntax error", "expected", "unexpected symbol"],
+        title: "Syntax Error",
+        explanation: "يوجد خطأ في كتابة Lua أو ترتيب الأقواس أو الكلمات.",
+        solutions: [
+            "راجع الأقواس () و {}.",
+            "راجع علامات الاقتباس.",
+            "تأكد من كتابة end.",
+            "راجع الفواصل وعلامات العمليات."
+        ],
+        example: `if true then
+    print("Hello")
+end`
+    },
+    {
+        match: ["attempt to call", "not a function"],
+        title: "Function Error",
+        explanation: "تحاول تشغيل شيء ليس دالة، أو اسم الدالة غير صحيح.",
+        solutions: [
+            "تأكد أن الاسم صحيح.",
+            "راجع طريقة استدعاء الدالة.",
+            "تأكد أنك لم تستخدم متغيرًا مكان الدالة."
+        ],
+        example: `local function hello()
+    print("Hello")
+end
+
+hello()`
+    },
+    {
+        match: ["remoteevent", "remote event", "remote function"],
+        title: "Remote Error",
+        explanation: "قد يكون RemoteEvent أو RemoteFunction غير موجود أو استخدامه غير صحيح.",
+        solutions: [
+            "تأكد من مكان RemoteEvent.",
+            "استخدم FireServer من LocalScript.",
+            "استخدم OnServerEvent من Script.",
+            "لا تستخدم FireServer من السيرفر."
+        },
+        example: `-- LocalScript
+RemoteEvent:FireServer()
+
+-- Server Script
+RemoteEvent.OnServerEvent:Connect(function(player)
+    print(player.Name)
+end)`
+    },
+    {
+        match: ["datastore", "data store", "save", "429"],
+        title: "DataStore Error",
+        explanation: "مشكلة في حفظ البيانات أو الوصول إلى DataStore.",
+        solutions: [
+            "فعّل Enable Studio Access to API Services.",
+            "تأكد أن اللعبة منشورة.",
+            "استخدم pcall.",
+            "لا تكرر طلبات الحفظ بشكل مفرط.",
+            "راجع حدود DataStore."
+        ],
+        example: `local success, result = pcall(function()
+    return Store:GetAsync(key)
+end)
+
+if not success then
+    warn(result)
+end`
+    },
+    {
+        match: ["permission", "not authorized", "403"],
+        title: "Permission Error",
+        explanation: "لا توجد صلاحيات للوصول إلى العنصر أو الخدمة.",
+        solutions: [
+            "تأكد من صلاحيات اللعبة.",
+            "راجع إعدادات API.",
+            "تأكد من أن السكربت يعمل في المكان المناسب.",
+            "راجع إعدادات المجموعة."
+        ],
+        example: `-- تأكد من تنفيذ عمليات السيرفر
+-- داخل Script في ServerScriptService`
+    },
+    {
+        match: ["timeout", "timed out"],
+        title: "Timeout",
+        explanation: "العملية لم تنته خلال الوقت المحدد.",
+        solutions: [
+            "راجع الحلقات الطويلة.",
+            "تأكد أن الدالة لا تنتظر بلا نهاية.",
+            "راجع الاتصالات والأحداث.",
+            "قلل العمليات المتكررة."
+        ],
+        example: `task.wait(1)
+print("Finished")`
+    }
+];
+
+function analyzeError() {
+    const input = $("errorInput")?.value?.trim();
+
+    if (!input) {
+        toast("اكتب الخطأ أولاً", "error");
+        return;
+    }
+
+    const lowered = input.toLowerCase();
+
+    const found = ErrorKnowledge.find(item =>
+        item.match.some(key => lowered.includes(key))
+    );
+
+    let output;
+
+    if (found) {
+        output = `
+🔍 ${found.title}
+
+📖 شرح الخطأ:
+${found.explanation}
+
+🛠️ الحلول المقترحة:
+${found.solutions.map((s, i) => `${i + 1}. ${s}`).join("\n")}
+
+💻 مثال:
+${found.example}
+
+⚠️ هذا تحليل مبدئي. راجع مكان الخطأ في Output وتأكد من سياق السكربت.
+`;
+    } else {
+        output = `
+🔍 تحليل الخطأ:
+
+لم أجد تطابقاً دقيقاً مع قاعدة الأخطاء المحلية.
+
+جرب التالي:
+1. اقرأ أول سطر أحمر في Output.
+2. راجع رقم السطر المشار إليه.
+3. تأكد من أسماء العناصر.
+4. تحقق من مكان السكربت.
+5. راجع الأقواس والكلمات المحجوزة.
+6. تأكد من نوع السكربت Script أو LocalScript.
+
+📌 أرسل رسالة الخطأ كاملة مع السكربت للحصول على تشخيص أدق.
+`;
+    }
+
+    const result = $("errorResult");
+
+    if (result) {
+        result.innerHTML = `<pre>${safeHTML(output)}</pre>`;
+    }
+
+    toast("اكتمل تحليل الخطأ");
+}
+
+/* ============================================================
+   PROJECT MANAGER
+============================================================ */
+
+function createProject() {
+    const name = $("projectName")?.value?.trim();
+    const description = $("projectDescription")?.value?.trim();
+
+    if (!name) {
+        toast("اكتب اسم المشروع", "error");
+        $("projectName")?.focus();
+        return;
+    }
+
+    const project = {
+        id: randomID(),
+        name,
+        description: description || "مشروع Roblox جديد",
+        date: Date.now(),
+        type: "Roblox"
+    };
+
+    App.projects.unshift(project);
+
+    writeStorage(GD.storage.projects, App.projects);
+
+    if ($("projectName")) $("projectName").value = "";
+    if ($("projectDescription")) $("projectDescription").value = "";
+
+    renderProjects();
+    toast("تم إنشاء المشروع بنجاح 🚀");
+}
+
+function deleteProject(id) {
+    App.projects = App.projects.filter(project => project.id !== id);
+
+    writeStorage(GD.storage.projects, App.projects);
+
+    renderProjects();
+    toast("تم حذف المشروع");
+}
+
+function renderProjects() {
+    const container = $("projectsList");
+    const homeContainer = $("recentProjects");
+
+    const count = $("projectCount");
+    if (count) count.textContent = App.projects.length;
+
+    if (container) {
+        if (!App.projects.length) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <div>📁</div>
+                    <h3>لا توجد مشاريع بعد</h3>
+                    <p>ابدأ بإنشاء أول مشروع لك</p>
+                </div>
+            `;
+        } else {
+            container.innerHTML = App.projects.map(project => `
+                <article class="project-card">
+                    <div class="project-icon">🎮</div>
+                    <div class="project-info">
+                        <h3>${safeHTML(project.name)}</h3>
+                        <p>${safeHTML(project.description)}</p>
+                        <small>${formatDate(new Date(project.date))}</small>
+                    </div>
+                    <button class="project-delete" data-delete-project="${safeHTML(project.id)}">🗑️</button>
+                </article>
+            `).join("");
+        }
+    }
+
+    if (homeContainer) {
+        homeContainer.innerHTML = App.projects.slice(0, 3).map(project => `
+            <div class="recent-project">
+                <strong>${safeHTML(project.name)}</strong>
+                <span>${safeHTML(project.description)}</span>
+            </div>
+        `).join("") || `<div class="empty-state">ابدأ مشروعك الأول!</div>`;
+    }
+
+    document.querySelectorAll("[data-delete-project]").forEach(button => {
+        button.addEventListener("click", () => {
+            deleteProject(button.dataset.deleteProject);
+        });
+    });
+}
+
+function initializeProjects() {
+    $("createProjectBtn")?.addEventListener("click", createProject);
+    renderProjects();
+}
+
+/* ============================================================
+   SCRIPT LIBRARY
+============================================================ */
+
+function initializeLibrary() {
+    document.querySelectorAll("[data-library-script]").forEach(button => {
+        button.addEventListener("click", () => {
+            const type = button.dataset.libraryScript;
+
+            navigate("scripts");
+
+            if ($("scriptCategory")) {
+                $("scriptCategory").value = type;
+            }
+
+            generateScript();
+        });
+    });
+}
+
+/* ============================================================
+   CLIPBOARD
+============================================================ */
+
+async function copyText(text) {
+    if (!text) {
+        toast("لا يوجد شيء لنسخه", "error");
+        return;
+    }
+
+    try {
+        await navigator.clipboard.writeText(text);
+        toast("تم النسخ 📋");
+    } catch {
+        const textarea = document.createElement("textarea");
+        textarea.value = text;
+        textarea.style.position = "fixed";
+        textarea.style.opacity = "0";
+
+        document.body.appendChild(textarea);
+        textarea.select();
+
+        const success = document.execCommand("copy");
+        textarea.remove();
+
+        toast(success ? "تم النسخ 📋" : "تعذر النسخ", success ? "success" : "error");
+    }
+}
+
+/* ============================================================
+   RESET
+============================================================ */
+
+function resetAllData() {
+    const confirmReset = window.confirm(
+        "هل أنت متأكد؟ سيتم حذف المشاريع والمحادثات المحفوظة على هذا الجهاز."
+    );
+
+    if (!confirmReset) return;
+
+    localStorage.removeItem(GD.storage.projects);
+    localStorage.removeItem(GD.storage.chat);
+
+    App.projects = [];
+    App.chat = [];
+
+    renderProjects();
+
+    const messages = $("chatMessages");
+    if (messages) messages.innerHTML = "";
+
+    toast("تمت إعادة ضبط البيانات");
+}
+
+/* ============================================================
+   SETTINGS
+============================================================ */
+
+function initializeSettings() {
+    $("resetData")?.addEventListener("click", resetAllData);
+    $("clearChat")?.addEventListener("click", clearChat);
+}
+
+/* ============================================================
+   KEYBOARD SHORTCUTS
+============================================================ */
+
+function initializeKeyboard() {
+    document.addEventListener("keydown", event => {
+        if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
+            event.preventDefault();
+            navigate("chat");
+            $("chatInput")?.focus();
+        }
+
+        if (event.key === "Escape") {
+            closeSidebar();
+        }
+    });
+}
+
+/* ============================================================
+   INITIALIZATION
+============================================================ */
+
+function initializeApp() {
+    initializeLoading();
+    initializeNavigation();
+    initializeSidebar();
+    initializeTheme();
+    initializeChat();
+    initializeEditor();
+    initializeProjects();
+    initializeLibrary();
+    initializeSettings();
+    initializeKeyboard();
+
+    updateLineNumbers();
+    updateEditorStatus();
+    renderProjects();
+
+    console.log(
+        `%c GAMEDEV AI ${GD.version} %c Ready 🚀`,
+        "background:#7c3aed;color:white;padding:5px;border-radius:5px;",
+        "color:#22d3ee;font-weight:bold;"
+    );
+}
+
+document.addEventListener("DOMContentLoaded", initializeApp);
+
+/* ============================================================
+   GLOBAL FUNCTIONS
+   Used by HTML buttons.
+============================================================ */
+
+window.navigate = navigate;
+window.openTool = openTool;
+window.usePrompt = usePrompt;
+window.generateScript = generateScript;
+window.copyCode = copyCode;
+window.downloadCode = downloadCode;
+window.generateIdea = generateIdea;
+window.generateGUI = generateGUI;
+window.analyzeError = analyzeError;
+window.createProject = createProject;
+window.deleteProject = deleteProject;
+window.toggleTheme = toggleTheme;
+window.copyText = copyText;
+window.clearChat = clearChat;
+window.resetAllData = resetAllData;
+window.sendChatMessage = sendChatMessage;
