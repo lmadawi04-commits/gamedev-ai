@@ -2058,3 +2058,261 @@ end)
     });
 
 })();
+/* ============================================
+   GAMEDEV AI — BUTTONS MASTER FIX V5
+============================================ */
+
+// 1. إضافة المشروع
+window.addProject = createProject;
+
+
+// 2. القائمة الجانبية
+document.getElementById("mobileMenu")
+    ?.addEventListener("click", openSidebar);
+
+
+// 3. زر المظهر في الإعدادات
+document.getElementById("settingsThemeToggle")
+    ?.addEventListener("click", toggleTheme);
+
+
+// 4. إصلاح الإشعارات
+toast = function (message, type = "success") {
+    let container = document.getElementById("toastContainer");
+
+    if (!container) {
+        container = document.createElement("div");
+        container.id = "toastContainer";
+
+        Object.assign(container.style, {
+            position: "fixed",
+            bottom: "25px",
+            left: "25px",
+            zIndex: "99999"
+        });
+
+        document.body.appendChild(container);
+    }
+
+    const item = document.createElement("div");
+    item.textContent = message;
+
+    Object.assign(item.style, {
+        background: type === "error" ? "#991b1b" : "#25203c",
+        color: "#ffffff",
+        padding: "14px 22px",
+        marginTop: "8px",
+        borderRadius: "12px",
+        boxShadow: "0 5px 25px #0005",
+        fontFamily: "Cairo, sans-serif"
+    });
+
+    container.appendChild(item);
+
+    setTimeout(() => item.remove(), 3000);
+};
+
+
+// 5. إضافة قوالب السكربتات الناقصة
+ScriptTemplates.levels = `
+-- GAMEDEV AI | LEVEL SYSTEM
+
+local Players = game:GetService("Players")
+
+Players.PlayerAdded:Connect(function(player)
+
+    local stats = Instance.new("Folder")
+    stats.Name = "leaderstats"
+    stats.Parent = player
+
+    local level = Instance.new("IntValue")
+    level.Name = "Level"
+    level.Value = 1
+    level.Parent = stats
+
+    local xp = Instance.new("IntValue")
+    xp.Name = "XP"
+    xp.Value = 0
+    xp.Parent = player
+
+    xp.Changed:Connect(function()
+
+        while xp.Value >= level.Value * 100 do
+            xp.Value -= level.Value * 100
+            level.Value += 1
+        end
+
+    end)
+
+end)
+`;
+
+ScriptTemplates.admin = `
+-- GAMEDEV AI | ADMIN SYSTEM
+
+local Players = game:GetService("Players")
+
+local ADMINS = {
+    [123456789] = true
+}
+
+Players.PlayerAdded:Connect(function(player)
+
+    player.Chatted:Connect(function(message)
+
+        if not ADMINS[player.UserId] then
+            return
+        end
+
+        local args = string.split(message, " ")
+
+        if args[1] == "!speed" then
+
+            local speed = tonumber(args[2])
+
+            if speed and player.Character then
+                local humanoid =
+                    player.Character:FindFirstChildOfClass("Humanoid")
+
+                if humanoid then
+                    humanoid.WalkSpeed = math.clamp(speed, 0, 100)
+                end
+            end
+
+        end
+
+    end)
+
+end)
+
+-- غيّر 123456789 إلى UserId الخاص بك.
+`;
+
+
+// 6. إصلاح تصنيفات مولد السكربتات
+const oldGenerateScript = generateScript;
+
+generateScript = function () {
+
+    const select = document.getElementById("scriptCategory");
+    if (!select) return;
+
+    const oldValue = select.value;
+
+    const mapping = {
+        gui: "ui",
+        rounds: "round",
+        levels: "levels",
+        admin: "admin"
+    };
+
+    select.value = mapping[oldValue] || oldValue;
+
+    oldGenerateScript();
+
+    select.value = oldValue;
+};
+
+window.generateScript = generateScript;
+
+
+// 7. إصلاح تصنيفات مصمم الواجهات
+const oldGenerateGUI = generateGUI;
+
+generateGUI = function () {
+
+    const select = document.getElementById("guiCategory");
+    if (!select) return;
+
+    const oldValue = select.value;
+
+    const mapping = {
+        "Main Menu": "custom",
+        "Shop": "shop",
+        "Inventory": "inventory",
+        "Stats": "hud",
+        "Settings": "settings",
+        "Admin Panel": "custom",
+        "Loading Screen": "loading"
+    };
+
+    select.value = mapping[oldValue] || "custom";
+
+    oldGenerateGUI();
+
+    select.value = oldValue;
+};
+
+window.generateGUI = generateGUI;
+
+
+// 8. إصلاح تصنيفات مولد الأفكار
+const oldGenerateIdea = generateIdea;
+
+generateIdea = function () {
+
+    const select = document.getElementById("ideaCategory");
+    if (!select) return;
+
+    const oldValue = select.value;
+
+    const mapping = {
+        "عالم مفتوح": "custom",
+        "محاكاة واقعية": "simulator",
+        "رعب": "horror",
+        "مغامرات": "survival",
+        "حياة واقعية": "roleplay",
+        "تحديات": "obby",
+        "قتال": "battleground",
+        "اقتصاد": "tycoon",
+        "بقاء": "survival"
+    };
+
+    select.value = mapping[oldValue] || "custom";
+
+    oldGenerateIdea();
+
+    select.value = oldValue;
+};
+
+window.generateIdea = generateIdea;
+
+
+// 9. تحديث عداد المحادثات
+const oldSendChat = sendChatMessage;
+
+sendChatMessage = async function (message) {
+    await oldSendChat(message);
+
+    const counter = document.getElementById("messageCount");
+
+    if (counter) {
+        counter.textContent = App.chat.length;
+    }
+};
+
+window.sendChatMessage = sendChatMessage;
+
+
+// 10. تحديث عداد المشاريع
+const oldRenderProjects = renderProjects;
+
+renderProjects = function () {
+    oldRenderProjects();
+
+    const counter = document.getElementById("projectCount");
+
+    if (counter) {
+        counter.textContent = App.projects.length;
+    }
+};
+
+
+// 11. إصلاح زر الإشعارات
+document.querySelector(".notification-btn")
+    ?.addEventListener("click", function () {
+        toast("لا توجد إشعارات جديدة 🔔");
+    });
+
+
+console.log("GAMEDEV AI V5 — BUTTONS FIXED");
