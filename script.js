@@ -1747,3 +1747,314 @@ generateGUI = function () {
 };
 
 console.log("GAMEDEV AI Compatibility Patch Loaded");
+/* =====================================================
+   GAMEDEV AI — FINAL BUTTONS & FEATURES FIX
+   Compatibility + Button Connections
+===================================================== */
+
+(function () {
+    "use strict";
+
+    /* ---------- TOAST NOTIFICATIONS ---------- */
+
+    toast = function (message, type = "success") {
+        const box = document.getElementById("toast");
+        const text = document.getElementById("toastMessage");
+
+        if (!box || !text) {
+            console.log("[GAMEDEV AI]", message);
+            return;
+        }
+
+        text.textContent = message;
+        box.classList.add("show");
+
+        clearTimeout(window.GDToastTimer);
+
+        window.GDToastTimer = setTimeout(() => {
+            box.classList.remove("show");
+        }, 2600);
+    };
+
+
+    /* ---------- MOBILE MENU ---------- */
+
+    document.getElementById("mobileMenu")
+        ?.addEventListener("click", openSidebar);
+
+
+    /* ---------- THEME BUTTONS ---------- */
+
+    document.getElementById("settingsThemeToggle")
+        ?.addEventListener("click", toggleTheme);
+
+
+    /* ---------- PROJECT BUTTON ---------- */
+
+    window.addProject = createProject;
+
+
+    /* ---------- PROJECT DISPLAY ---------- */
+
+    const originalRenderProjects = renderProjects;
+
+    renderProjects = function () {
+        originalRenderProjects();
+
+        const home = document.getElementById("homeRecentProjects");
+
+        if (home) {
+            if (!App.projects.length) {
+                home.innerHTML = `
+                    <div class="empty-state">
+                        <div>▣</div>
+                        <strong>لا توجد مشاريع حتى الآن</strong>
+                        <p>أنشئ أول مشروع لك وابدأ رحلتك.</p>
+                        <button onclick="openTool('projects')">
+                            إنشاء مشروع جديد
+                        </button>
+                    </div>
+                `;
+            } else {
+                home.innerHTML = App.projects.slice(0, 3).map(project => `
+                    <div class="recent-project">
+                        <strong>${safeHTML(project.name)}</strong>
+                        <span>${safeHTML(project.description)}</span>
+                    </div>
+                `).join("");
+            }
+        }
+
+        const counter = document.getElementById("projectCount");
+
+        if (counter) {
+            counter.textContent = App.projects.length;
+        }
+    };
+
+
+    /* ---------- CHAT COUNTER ---------- */
+
+    function updateChatCounter() {
+        const counter = document.getElementById("messageCount");
+
+        if (counter) {
+            counter.textContent = App.chat.length;
+        }
+    }
+
+    const originalSendChat = sendChatMessage;
+
+    sendChatMessage = async function (message) {
+        await originalSendChat(message);
+        updateChatCounter();
+    };
+
+    window.sendChatMessage = sendChatMessage;
+
+    const originalClearChat = clearChat;
+
+    clearChat = function () {
+        originalClearChat();
+        updateChatCounter();
+    };
+
+    window.clearChat = clearChat;
+
+
+    /* ---------- SCRIPT GENERATOR FIX ---------- */
+
+    ScriptTemplates.levels = `-- GAMEDEV AI | LEVEL SYSTEM
+
+local Players = game:GetService("Players")
+
+Players.PlayerAdded:Connect(function(player)
+
+    local leaderstats = Instance.new("Folder")
+    leaderstats.Name = "leaderstats"
+    leaderstats.Parent = player
+
+    local level = Instance.new("IntValue")
+    level.Name = "Level"
+    level.Value = 1
+    level.Parent = leaderstats
+
+    local xp = Instance.new("IntValue")
+    xp.Name = "XP"
+    xp.Value = 0
+    xp.Parent = player
+
+    xp.Changed:Connect(function()
+
+        local neededXP = level.Value * 100
+
+        while xp.Value >= neededXP do
+            xp.Value -= neededXP
+            level.Value += 1
+            neededXP = level.Value * 100
+        end
+
+    end)
+
+end)
+`;
+
+    ScriptTemplates.admin = `-- GAMEDEV AI | BASIC ADMIN SYSTEM
+
+local Players = game:GetService("Players")
+
+local ADMINS = {
+    [123456789] = true
+}
+
+Players.PlayerAdded:Connect(function(player)
+
+    player.Chatted:Connect(function(message)
+
+        if not ADMINS[player.UserId] then
+            return
+        end
+
+        local args = string.split(message, " ")
+
+        if args[1] == "!speed" then
+
+            local speed = tonumber(args[2])
+
+            if speed and player.Character then
+                local humanoid =
+                    player.Character:FindFirstChildOfClass("Humanoid")
+
+                if humanoid then
+                    humanoid.WalkSpeed = math.clamp(speed, 0, 100)
+                end
+            end
+
+        end
+
+    end)
+
+end)
+
+-- استبدل 123456789 بمعرف حسابك.
+`;
+
+    const originalGenerateScript = generateScript;
+
+    generateScript = function () {
+
+        const select = document.getElementById("scriptCategory");
+
+        if (!select) return;
+
+        const oldValue = select.value;
+
+        const mapping = {
+            gui: "ui",
+            rounds: "round",
+            levels: "levels",
+            admin: "admin"
+        };
+
+        select.value = mapping[oldValue] || oldValue;
+
+        originalGenerateScript();
+
+        select.value = oldValue;
+    };
+
+    window.generateScript = generateScript;
+
+
+    /* ---------- GUI GENERATOR FIX ---------- */
+
+    const originalGenerateGUI = generateGUI;
+
+    generateGUI = function () {
+
+        const select = document.getElementById("guiCategory");
+
+        if (!select) return;
+
+        const oldValue = select.value;
+
+        const mapping = {
+            "Main Menu": "custom",
+            "Shop": "shop",
+            "Inventory": "inventory",
+            "Stats": "hud",
+            "Settings": "settings",
+            "Admin Panel": "custom",
+            "Loading Screen": "loading"
+        };
+
+        select.value = mapping[oldValue] || "custom";
+
+        originalGenerateGUI();
+
+        select.value = oldValue;
+    };
+
+    window.generateGUI = generateGUI;
+
+
+    /* ---------- IDEA GENERATOR FIX ---------- */
+
+    const originalGenerateIdea = generateIdea;
+
+    generateIdea = function () {
+
+        const select = document.getElementById("ideaCategory");
+
+        if (!select) return;
+
+        const oldValue = select.value;
+
+        const mapping = {
+            "عالم مفتوح": "custom",
+            "محاكاة واقعية": "simulator",
+            "رعب": "horror",
+            "مغامرات": "survival",
+            "حياة واقعية": "roleplay",
+            "تحديات": "obby",
+            "قتال": "battleground",
+            "اقتصاد": "tycoon",
+            "بقاء": "survival"
+        };
+
+        select.value = mapping[oldValue] || "custom";
+
+        originalGenerateIdea();
+
+        select.value = oldValue;
+    };
+
+    window.generateIdea = generateIdea;
+
+
+    /* ---------- NOTIFICATION BUTTON ---------- */
+
+    document.querySelector(".notification-btn")
+        ?.addEventListener("click", function () {
+            toast("لا توجد إشعارات جديدة 🔔");
+        });
+
+
+    /* ---------- INITIAL COUNTERS ---------- */
+
+    document.addEventListener("DOMContentLoaded", function () {
+
+        updateChatCounter();
+
+        const counter = document.getElementById("projectCount");
+
+        if (counter) {
+            counter.textContent = App.projects.length;
+        }
+
+        renderProjects();
+
+        console.log("GAMEDEV AI — All compatibility fixes loaded.");
+    });
+
+})();
