@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Studio Lite PRO | GAMEDEV AI</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:Cairo,sans-serif;background:#080914;color:#fff;min-height:100vh}
+:root{--purple:#8b5cf6;--cyan:#22d3ee;--panel:#121426;--muted:#9295ad}
+header{height:75px;border-bottom:1px solid #ffffff12;display:flex;align-items:center;justify-content:space-between;padding:0 6%;background:#0c0d1bf0;position:sticky;top:0;z-index:5}
+.logo{font-size:21px;font-weight:900;background:linear-gradient(90deg,#a78bfa,#22d3ee);background-clip:text;color:transparent}
+.back{color:#c4b5fd;text-decoration:none;font-size:13px}
+.hero{text-align:center;padding:65px 20px 40px;background:radial-gradient(ellipse at top,#5126a933,transparent 65%)}
+.badge{display:inline-block;padding:7px 16px;border:1px solid #8b5cf655;border-radius:30px;color:#c4b5fd;font-size:12px;margin-bottom:18px}
+h1{font-size:clamp(30px,6vw,54px);font-weight:900}
+h1 span{background:linear-gradient(90deg,#a78bfa,#22d3ee);background-clip:text;color:transparent}
+.hero p{color:var(--muted);margin:12px auto;max-width:600px;font-size:14px}
+.container{width:min(1100px,92%);margin:auto;padding:20px 0 60px}
+.section-title{font-size:20px;font-weight:900;margin:25px 0 17px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:15px}
+.card{background:linear-gradient(145deg,#17192e,#101221);border:1px solid #ffffff12;border-radius:18px;padding:21px;transition:.25s;cursor:pointer}
+.card:hover{transform:translateY(-5px);border-color:#8b5cf688;box-shadow:0 12px 35px #8b5cf618}
+.icon{font-size:29px;margin-bottom:12px}
+.card h3{font-size:16px;margin-bottom:6px}
+.card p{font-size:12px;color:var(--muted);line-height:1.9}
+.tag{display:inline-block;font-size:10px;color:#67e8f9;background:#22d3ee12;padding:4px 9px;border-radius:20px;margin-top:12px}
+.workspace{margin-top:30px;background:var(--panel);border:1px solid #ffffff12;border-radius:20px;padding:22px}
+.workspace h2{font-size:19px;margin-bottom:8px}
+.desc{font-size:12px;color:var(--muted);margin-bottom:18px}
+label{display:block;font-size:13px;margin:13px 0 7px}
+input,select,textarea{width:100%;padding:13px;background:#090b18;color:#fff;border:1px solid #ffffff20;border-radius:11px;font-family:inherit;outline:none}
+input:focus,select:focus,textarea:focus{border-color:var(--purple)}
+textarea{min-height:125px;resize:vertical;line-height:1.8}
+button{font-family:inherit;cursor:pointer;border:0;border-radius:10px;padding:11px 18px;font-weight:800}
+.primary{background:linear-gradient(90deg,#7c3aed,#2563eb);color:white;margin-top:15px}
+.secondary{background:#ffffff12;color:#ddd;margin-top:10px}
+.output{margin-top:17px;display:none}
+.output pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#080a15;border:1px solid #ffffff15;border-radius:12px;padding:16px;direction:ltr;text-align:left;font:13px Consolas,monospace;line-height:1.8;color:#a5f3fc;max-height:400px;overflow:auto}
+.notice{font-size:11px;color:#fbbf24;margin-top:12px;line-height:1.8}
+footer{text-align:center;padding:25px;color:#686b83;font-size:11px;border-top:1px solid #ffffff10}
+@media(max-width:600px){header{padding:0 4%}.workspace{padding:16px}.hero{padding-top:45px}}
+</style>
+</head>
+<body>
+
+<header>
+<div class="logo">GAMEDEV AI</div>
+<a class="back" href="index.html">← العودة للموقع</a>
+</header>
+
+<section class="hero">
+<div class="badge">⚡ SPECIAL EDITION FOR ROBLOX</div>
+<h1>STUDIO LITE <span>PRO</span></h1>
+<p>مساعدك لتطوير ألعاب Roblox باستخدام Studio Lite. أفكار، أنظمة، سكربتات وأدوات في مكان واحد.</p>
+</section>
+
+<main class="container">
+<h2 class="section-title">🚀 أدوات المطور</h2>
+
+<div class="grid">
+<div class="card" onclick="choose('script')">
+<div class="icon">💻</div><h3>مولّد السكربتات</h3>
+<p>أنشئ نماذج سكربتات Roblox Luau قابلة للتعديل.</p>
+<span class="tag">LUAU</span>
+</div>
+<div class="card" onclick="choose('map')">
+<div class="icon">🏗️</div><h3>أفكار المابات</h3>
+<p>اكتشف أفكار ألعاب ومابات جديدة ومميزة.</p>
+<span class="tag">MAP IDEAS</span>
+</div>
+<div class="card" onclick="choose('gui')">
+<div class="icon">🎨</div><h3>مصمم الواجهات</h3>
+<p>خطط لقوائم المتجر والإحصائيات والأزرار.</p>
+<span class="tag">GUI DESIGN</span>
+</div>
+<div class="card" onclick="choose('error')">
+<div class="icon">🛠️</div><h3>مساعد الأخطاء</h3>
+<p>افهم رسائل الأخطاء واحصل على خطوات للفحص.</p>
+<span class="tag">DEBUG HELP</span>
+</div>
+</div>
+
+<section class="workspace" id="workspace">
+<h2>🧠 مساحة العمل الذكية</h2>
+<p class="desc">اختر أداة من الأعلى أو اكتب طلبك لبدء العمل.</p>
+
+<label>نوع الأداة</label>
+<select id="tool">
+<option value="script">مولّد السكربتات</option>
+<option value="map">أفكار المابات</option>
+<option value="gui">مصمم الواجهات</option>
+<option value="error">مساعد الأخطاء</option>
+</select>
+
+<label>اكتب طلبك</label>
+<textarea id="request" placeholder="مثال: أبي سكربت يعطي اللاعب 100 كوين عند لمس قطعة..."></textarea>
+
+<button class="primary" onclick="generate()">✨ إنشاء النتيجة</button>
+<button class="secondary" onclick="clearAll()">مسح</button>
+
+<div class="output" id="output">
+<h3 style="margin-bottom:10px">📄 النتيجة</h3>
+<pre id="result"></pre>
+<button class="primary" onclick="copyResult()">📋 نسخ النتيجة</button>
+<button class="secondary" onclick="downloadResult()">⬇️ تحميل كملف TXT</button>
+</div>
+
+<p class="notice">⚠️ هذه نسخة محلية تجريبية تعتمد على قوالب وأمثلة مدمجة، وليست اتصالًا بنموذج ذكاء اصطناعي حقيقي. اختبر السكربتات في نسخة تجريبية قبل استخدامها في لعبتك.</p>
+</section>
+</main>
+
+<footer>STUDIO LITE PRO · POWERED BY GAMEDEV AI</footer>
+
+<script>
+const tool=document.getElementById('tool');
+const request=document.getElementById('request');
+const output=document.getElementById('output');
+const result=document.getElementById('result');
+
+function choose(type){
+ tool.value=type;
+ document.getElementById('workspace').scrollIntoView({behavior:'smooth'});
+ const hints={
+ script:'اكتب النظام الذي تريد إنشاء نموذج له...',
+ map:'مثال: أبي فكرة ماب حياة واقعية خليجية...',
+ gui:'مثال: أبي واجهة متجر فيها أزرار شراء...',
+ error:'الصق رسالة الخطأ والجزء المتعلق بها هنا...'
+ };
+ request.placeholder=hints[type];
+ request.focus();
+}
+
+function generate(){
+ const text=request.value.trim();
+ if(!text){alert('اكتب طلبك أولاً!');return}
+ const type=tool.value;
+ let answer='';
+
+ if(type==='script'){
+  if(/كوين|عملة|فلوس|coin|money/i.test(text)){
+   answer=`-- نموذج نظام Coins
+-- ضع Script داخل ServerScriptService
+
+game.Players.PlayerAdded:Connect(function(player)
+    local leaderstats = Instance.new("Folder")
+    leaderstats.Name = "leaderstats"
+    leaderstats.Parent = player
+
+    local coins = Instance.new("IntValue")
+    coins.Name = "Coins"
+    coins.Value = 0
+    coins.Parent = leaderstats
+end)
+
+-- هذا نموذج مبدئي. لا يحتوي على حفظ بيانات.`;
+  }else if(/سرعة|speed/i.test(text)){
+   answer=`-- نموذج قطعة زيادة السرعة
+-- ضع Script داخل Part
+
+local part = script.Parent
+local boostSpeed = 32
+
+part.Touched:Connect(function(hit)
+    local character = hit.Parent
+    local humanoid = character:FindFirstChildOfClass("Humanoid")
+
+    if humanoid then
+        humanoid.WalkSpeed = boostSpeed
+    end
+end)`;
+  }else if(/قتل|kill|موت/i.test(text)){
+   answer=`-- Kill Brick
+-- ضع Script داخل Part
+
+local part = script.Parent
+
+part.Touched:Connect(function(hit)
+    local character = hit.Parent
+    local humanoid = character:FindFirstChildOfClass("Humanoid")
+
+    if humanoid then
+        humanoid.Health = 0
+    end
+end)`;
+  }else{
+   answer='لم أجد قالباً مطابقاً لطلبك بعد. جرّب طلب نظام Coins أو Speed أو Kill Brick، أو استخدم الطلب لتحديد النظام الذي تريد تطويره لاحقاً.';
+  }
+ }
+ else if(type==='map'){
+  answer=`اقتراح ماب جديد بناءً على طلبك:
+
+اسم الماب: ${text}
+
+أفكار التطوير:
+1. منطقة بداية فيها شرح للعبة.
+2. مهام يومية ومكافآت.
+3. وظائف بمستويات وترقيات.
+4. متجر خاص بالأدوات والملابس.
+5. أحداث عشوائية لزيادة التفاعل.
+6. نظام حفظ تقدم اللاعبين.
+
+نصيحة: ابدأ بمنطقة صغيرة واختبر أسلوب اللعب قبل بناء المدينة كاملة.`;
+ }
+ else if(type==='gui'){
+  answer=`مخطط واجهة GUI:
+
+الطلب: ${text}
+
+التقسيم المقترح:
+- ScreenGui
+  - MainFrame
+    - UICorner
+    - UIStroke
+    - Title
+    - CloseButton
+    - ContentFrame
+    - ActionButton
+
+التصميم:
+خلفية داكنة، أزرار بنفسجية، زوايا دائرية، وخط Cairo.
+
+أنشئ العناصر داخل StarterGui ثم اربط الأزرار بـ LocalScript.`;
+ }
+ else{
+  answer=`مساعد فحص الأخطاء
+
+المشكلة المرسلة:
+${text}
+
+خطوات الفحص:
+1. اقرأ أول سطر أحمر في Output.
+2. تحقق من اسم Script ومكانه داخل Explorer.
+3. تأكد من تطابق أسماء Parts وFolders.
+4. افحص الأقواس وعلامات الاقتباس.
+5. تأكد من استخدام Script أو LocalScript في المكان الصحيح.
+
+هذه خطوات عامة وليست تشخيصاً مؤكداً. أرسل رسالة الخطأ كاملة للحصول على مساعدة أدق.`;
+ }
+
+ result.textContent=answer;
+ output.style.display='block';
+ output.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+function copyResult(){
+ navigator.clipboard.writeText(result.textContent)
+ .then(()=>alert('تم نسخ النتيجة!'))
+ .catch(()=>alert('تعذر النسخ، حدد النص وانسخه يدوياً.'));
+}
+
+function downloadResult(){
+ const blob=new Blob([result.textContent],{type:'text/plain;charset=utf-8'});
+ const url=URL.createObjectURL(blob);
+ const a=document.createElement('a');
+ a.href=url;
+ a.download='StudioLite-Result.txt';
+ a.click();
+ URL.revokeObjectURL(url);
+}
+
+function clearAll(){
+ request.value='';
+ result.textContent='';
+ output.style.display='none';
+}
+</script>
+</body>
+</html>
