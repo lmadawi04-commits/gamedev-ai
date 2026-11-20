@@ -872,6 +872,23 @@ attempt to index nil with 'Value'
 </div>
 
 <script src="script.js"></script>
+<script>
+(function () {
+    function removeLoader() {
+        const loader = document.getElementById("loadingScreen");
 
+        if (loader) {
+            loader.style.setProperty("display", "none", "important");
+            loader.style.setProperty("opacity", "0", "important");
+            loader.style.setProperty("visibility", "hidden", "important");
+        }
+    }
+
+    removeLoader();
+    window.addEventListener("load", removeLoader);
+    setTimeout(removeLoader, 1500);
+    setTimeout(removeLoader, 3000);
+})();
+</script>
 </body>
 </html>
