@@ -1629,3 +1629,121 @@ window.copyText = copyText;
 window.clearChat = clearChat;
 window.resetAllData = resetAllData;
 window.sendChatMessage = sendChatMessage;
+/* =========================================
+   GAMEDEV AI — HTML COMPATIBILITY PATCH
+========================================= */
+
+document.addEventListener("DOMContentLoaded", function () {
+
+    // Mobile menu
+    document.getElementById("mobileMenu")
+        ?.addEventListener("click", openSidebar);
+
+    // Settings theme button
+    document.getElementById("settingsThemeToggle")
+        ?.addEventListener("click", toggleTheme);
+
+    // Project counter
+    const projectCount = document.getElementById("projectCount");
+
+    if (projectCount) {
+        projectCount.textContent = App.projects.length;
+    }
+
+    // Chat message counter
+    const messageCount = document.getElementById("messageCount");
+
+    if (messageCount) {
+        messageCount.textContent = App.chat.length;
+    }
+
+});
+
+// Match HTML project button
+window.addProject = createProject;
+
+// Match HTML notification element
+toast = function (message, type = "success") {
+    const box = document.getElementById("toast");
+    const text = document.getElementById("toastMessage");
+
+    if (!box || !text) {
+        console.log(message);
+        return;
+    }
+
+    text.textContent = message;
+    box.classList.add("show");
+
+    clearTimeout(window.GDToastTimer);
+
+    window.GDToastTimer = setTimeout(() => {
+        box.classList.remove("show");
+    }, 2600);
+};
+
+// Match script categories with generator
+const originalGenerateScript = generateScript;
+
+generateScript = function () {
+    const select = document.getElementById("scriptCategory");
+    if (!select) return;
+
+    const originalValue = select.value;
+
+    const categories = {
+        gui: "ui",
+        rounds: "round",
+        levels: "generic",
+        admin: "generic"
+    };
+
+    select.value = categories[originalValue] || originalValue;
+
+    originalGenerateScript();
+
+    select.value = originalValue;
+};
+
+// Match GUI categories
+generateGUI = function () {
+    const select = document.getElementById("guiCategory");
+
+    if (!select) return;
+
+    const originalValue = select.value;
+
+    const categories = {
+        "Main Menu": "custom",
+        "Shop": "shop",
+        "Inventory": "inventory",
+        "Stats": "hud",
+        "Settings": "settings",
+        "Admin Panel": "custom",
+        "Loading Screen": "loading"
+    };
+
+    select.value = categories[originalValue] || "custom";
+
+    const originalDetails = document.getElementById("guiDetails");
+    const details = originalDetails?.value || "";
+
+    const plan = GUIPlans[select.value] || GUIPlans.custom;
+
+    const result = document.getElementById("guiResult");
+
+    if (result) {
+        result.innerHTML = `<pre>${safeHTML([
+            ...plan,
+            "",
+            "تفاصيل التصميم:",
+            details || "لا توجد تفاصيل إضافية."
+        ].join("\n"))}</pre>`;
+    }
+
+    select.value = originalValue;
+
+    toast("تم إنشاء مخطط الواجهة");
+};
+
+console.log("GAMEDEV AI Compatibility Patch Loaded");
