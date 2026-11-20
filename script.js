@@ -2316,3 +2316,80 @@ document.querySelector(".notification-btn")
 
 
 console.log("GAMEDEV AI V5 — BUTTONS FIXED");
+/* =========================================
+   GAMEDEV AI — BUTTON SYSTEM V1
+   نظام ربط الأزرار الأساسي
+========================================= */
+
+(function () {
+    "use strict";
+
+    // منع تكرار تشغيل النظام
+    if (window.GAMEDEV_BUTTONS_V1) return;
+    window.GAMEDEV_BUTTONS_V1 = true;
+
+    // الإشعارات
+    window.toast = function (message, type = "success") {
+        const box = document.getElementById("toast");
+        const text = document.getElementById("toastMessage");
+
+        if (box && text) {
+            text.textContent = message;
+            box.classList.add("show");
+
+            clearTimeout(window.GDToastTimer);
+
+            window.GDToastTimer = setTimeout(() => {
+                box.classList.remove("show");
+            }, 2800);
+
+            return;
+        }
+
+        console.log("[GAMEDEV AI]", message);
+    };
+
+    // زر القائمة الجانبية
+    const mobileMenu = document.getElementById("mobileMenu");
+
+    if (mobileMenu && typeof window.openSidebar === "function") {
+        mobileMenu.addEventListener("click", window.openSidebar);
+    }
+
+    // زر إغلاق القائمة
+    const sidebarClose = document.getElementById("sidebarClose");
+
+    if (sidebarClose && typeof window.closeSidebar === "function") {
+        sidebarClose.addEventListener("click", window.closeSidebar);
+    }
+
+    // زر المظهر في الإعدادات
+    const settingsTheme = document.getElementById("settingsThemeToggle");
+
+    if (settingsTheme && typeof window.toggleTheme === "function") {
+        settingsTheme.addEventListener("click", window.toggleTheme);
+    }
+
+    // تحديث العدادات
+    function updateCounters() {
+        const projects = document.getElementById("projectCount");
+        const messages = document.getElementById("messageCount");
+
+        if (projects && window.App?.projects) {
+            projects.textContent = window.App.projects.length;
+        }
+
+        if (messages && window.App?.chat) {
+            messages.textContent = window.App.chat.length;
+        }
+    }
+
+    // تشغيل بعد تحميل الصفحة
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", updateCounters);
+    } else {
+        updateCounters();
+    }
+
+    console.log("GAMEDEV AI BUTTON SYSTEM V1 LOADED");
+})();
