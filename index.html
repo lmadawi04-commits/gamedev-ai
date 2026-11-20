@@ -4,427 +4,1697 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#080814">
 
-    <title>GAMEDEV AI ULTRA X</title>
+    <meta name="theme-color" content="#080914">
+    <meta name="description" content="GAMEDEV AI - منصة ذكية لمطوري الألعاب وصناعة سكربتات Roblox">
 
+    <title>GAMEDEV AI ULTRA | منصة المطورين</title>
+
+    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+
+    <!-- Main CSS -->
     <link rel="stylesheet" href="style.css">
+
 </head>
 
 <body>
 
+<!-- =====================================
+     BACKGROUND EFFECTS
+===================================== -->
+
 <div class="background-effects">
     <div class="glow glow-one"></div>
     <div class="glow glow-two"></div>
-    <div class="grid-background"></div>
+    <div class="grid-overlay"></div>
 </div>
 
-<header class="navbar">
 
-    <a href="#" class="brand">
-        <div class="brand-icon">G</div>
+<!-- =====================================
+     LOADING SCREEN
+===================================== -->
 
-        <div>
-            <h2>GAMEDEV <span>AI</span></h2>
-            <small>ULTRA X DEVELOPER PLATFORM</small>
+<div id="loadingScreen" class="loading-screen">
+
+    <div class="loading-logo">
+        <i class="fa-solid fa-bolt"></i>
+    </div>
+
+    <h2>GAMEDEV <span>AI</span></h2>
+
+    <p>جاري تجهيز بيئة المطورين...</p>
+
+    <div class="loading-bar">
+        <div class="loading-progress"></div>
+    </div>
+
+</div>
+
+
+<!-- =====================================
+     MAIN APPLICATION
+===================================== -->
+
+<div class="app-container">
+
+
+    <!-- =================================
+         SIDEBAR
+    ================================== -->
+
+    <aside class="sidebar" id="sidebar">
+
+        <div class="sidebar-top">
+
+            <div class="brand">
+
+                <div class="brand-icon">
+                    <i class="fa-solid fa-bolt"></i>
+                </div>
+
+                <div class="brand-text">
+                    <h2>GAMEDEV <span>AI</span></h2>
+                    <small>ULTRA DEVELOPMENT</small>
+                </div>
+
+            </div>
+
+            <button class="sidebar-close" id="sidebarClose">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+
         </div>
-    </a>
-
-    <nav class="nav-links">
-        <a href="#home">الرئيسية</a>
-        <a href="#tools">الأدوات</a>
-        <a href="#assistant">الذكاء الاصطناعي</a>
-        <a href="#projects">المشاريع</a>
-    </nav>
-
-    <button id="themeToggle" class="theme-button">🌙</button>
-
-</header>
 
 
-<main>
+        <!-- MAIN NAVIGATION -->
 
-    <!-- HERO SECTION -->
+        <div class="sidebar-section">
 
-    <section class="hero" id="home">
-
-        <div class="hero-content">
-
-            <div class="status-badge">
-                <span class="status-dot"></span>
-                GAMEDEV AI ULTRA X
+            <div class="sidebar-label">
+                مساحة العمل
             </div>
 
-            <h1>
-                مستقبل تطوير الألعاب
-                <span>يبدأ من هنا.</span>
-            </h1>
+            <button class="nav-item active" onclick="openTool('home')">
 
-            <p>
-                بيئة متكاملة لمطوري الألعاب.
-                أنشئ السكربتات، خطط المابات،
-                حل الأخطاء وطور مشاريعك باستخدام أدوات ذكية.
-            </p>
+                <i class="fa-solid fa-house"></i>
 
-            <div class="hero-buttons">
+                <span>الرئيسية</span>
 
-                <a href="#assistant" class="primary-button">
-                    🚀 ابدأ الآن
-                </a>
+            </button>
 
-                <a href="#tools" class="secondary-button">
-                    استكشف الأدوات
-                </a>
+
+            <button class="nav-item" onclick="openTool('chat')">
+
+                <i class="fa-solid fa-robot"></i>
+
+                <span>مساعد المطور</span>
+
+                <span class="nav-badge">AI</span>
+
+            </button>
+
+
+            <button class="nav-item" onclick="openTool('scripts')">
+
+                <i class="fa-solid fa-code"></i>
+
+                <span>مختبر السكربتات</span>
+
+            </button>
+
+
+            <button class="nav-item" onclick="openTool('ideas')">
+
+                <i class="fa-solid fa-lightbulb"></i>
+
+                <span>أفكار المابات</span>
+
+            </button>
+
+
+            <button class="nav-item" onclick="openTool('gui')">
+
+                <i class="fa-solid fa-palette"></i>
+
+                <span>مصمم الواجهات</span>
+
+            </button>
+
+
+            <button class="nav-item" onclick="openTool('errors')">
+
+                <i class="fa-solid fa-bug"></i>
+
+                <span>محلل الأخطاء</span>
+
+            </button>
+
+        </div>
+
+
+        <!-- PROJECTS -->
+
+        <div class="sidebar-section">
+
+            <div class="sidebar-label">
+                إدارة المشاريع
+            </div>
+
+            <button class="nav-item" onclick="openTool('projects')">
+
+                <i class="fa-solid fa-folder-open"></i>
+
+                <span>مشاريعي</span>
+
+            </button>
+
+
+            <button class="nav-item" onclick="openTool('library')">
+
+                <i class="fa-solid fa-book"></i>
+
+                <span>مكتبة الأكواد</span>
+
+            </button>
+
+        </div>
+
+
+        <!-- EXTRA -->
+
+        <div class="sidebar-section">
+
+            <div class="sidebar-label">
+                النظام
+            </div>
+
+            <button class="nav-item" onclick="openTool('settings')">
+
+                <i class="fa-solid fa-gear"></i>
+
+                <span>الإعدادات</span>
+
+            </button>
+
+        </div>
+
+
+        <!-- SIDEBAR BOTTOM -->
+
+        <div class="sidebar-bottom">
+
+            <div class="developer-card">
+
+                <div class="developer-avatar">
+                    <i class="fa-solid fa-user-astronaut"></i>
+                </div>
+
+                <div class="developer-info">
+
+                    <strong>Game Developer</strong>
+
+                    <small>مطور ألعاب</small>
+
+                </div>
+
+                <i class="fa-solid fa-ellipsis"></i>
 
             </div>
 
-            <div class="hero-stats">
+            <div class="sidebar-version">
+                GAMEDEV AI ULTRA V1.0
+            </div>
+
+        </div>
+
+    </aside>
+
+
+    <!-- =================================
+         MAIN CONTENT
+    ================================== -->
+
+    <main class="main-content">
+
+
+        <!-- =================================
+             TOPBAR
+        ================================== -->
+
+        <header class="topbar">
+
+            <div class="topbar-right">
+
+                <button class="mobile-menu" id="mobileMenu">
+                    <i class="fa-solid fa-bars"></i>
+                </button>
+
+                <div class="breadcrumb">
+
+                    <span>GAMEDEV AI</span>
+
+                    <i class="fa-solid fa-chevron-left"></i>
+
+                    <strong id="pageTitle">الرئيسية</strong>
+
+                </div>
+
+            </div>
+
+
+            <div class="topbar-left">
+
+                <div class="system-status">
+
+                    <span class="status-dot"></span>
+
+                    <span>النظام يعمل</span>
+
+                </div>
+
+
+                <button class="topbar-button" id="themeToggle" title="تغيير المظهر">
+
+                    <i class="fa-solid fa-moon"></i>
+
+                </button>
+
+
+                <button class="topbar-button notification-button" title="الإشعارات">
+
+                    <i class="fa-regular fa-bell"></i>
+
+                    <span class="notification-dot"></span>
+
+                </button>
+
+            </div>
+
+        </header>
+
+
+
+        <!-- =================================
+             PAGE: HOME
+        ================================== -->
+
+        <section class="page active" id="page-home">
+
+
+            <!-- HERO -->
+
+            <div class="hero-section">
+
+                <div class="hero-content">
+
+                    <div class="hero-label">
+
+                        <i class="fa-solid fa-wand-magic-sparkles"></i>
+
+                        NEXT GENERATION GAME DEVELOPMENT
+
+                    </div>
+
+
+                    <h1>
+
+                        اصنع ألعابك
+
+                        <br>
+
+                        بإبداع أكبر مع
+
+                        <span class="gradient-text">GAMEDEV AI</span>
+
+                    </h1>
+
+
+                    <p>
+
+                        بيئة تطوير تجمع أدوات البرمجة، أفكار المابات،
+                        وتحليل الأخطاء في مكان واحد.
+
+                    </p>
+
+
+                    <div class="hero-buttons">
+
+                        <button class="primary-button" onclick="openTool('chat')">
+
+                            <i class="fa-solid fa-robot"></i>
+
+                            ابدأ مع المساعد
+
+                        </button>
+
+
+                        <button class="secondary-button" onclick="openTool('scripts')">
+
+                            <i class="fa-solid fa-code"></i>
+
+                            افتح مختبر السكربتات
+
+                        </button>
+
+                    </div>
+
+
+                    <div class="hero-features">
+
+                        <span>
+                            <i class="fa-solid fa-check"></i>
+                            أدوات للمطورين
+                        </span>
+
+                        <span>
+                            <i class="fa-solid fa-check"></i>
+                            قوالب Roblox
+                        </span>
+
+                        <span>
+                            <i class="fa-solid fa-check"></i>
+                            إدارة المشاريع
+                        </span>
+
+                    </div>
+
+                </div>
+
+
+                <div class="hero-visual">
+
+                    <div class="visual-orbit orbit-one"></div>
+
+                    <div class="visual-orbit orbit-two"></div>
+
+                    <div class="visual-center">
+
+                        <i class="fa-solid fa-code"></i>
+
+                    </div>
+
+
+                    <div class="floating-card floating-card-one">
+
+                        <i class="fa-solid fa-robot"></i>
+
+                        <span>AI Assistant</span>
+
+                    </div>
+
+
+                    <div class="floating-card floating-card-two">
+
+                        <i class="fa-solid fa-terminal"></i>
+
+                        <span>Script Engine</span>
+
+                    </div>
+
+
+                    <div class="floating-card floating-card-three">
+
+                        <i class="fa-solid fa-gamepad"></i>
+
+                        <span>Game Studio</span>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+
+            <!-- STATS -->
+
+            <div class="dashboard-stats">
+
+                <div class="stat-card">
+
+                    <div class="stat-icon purple">
+                        <i class="fa-solid fa-folder"></i>
+                    </div>
+
+                    <div class="stat-info">
+
+                        <span>المشاريع المحفوظة</span>
+
+                        <strong id="projectCount">0</strong>
+
+                    </div>
+
+                </div>
+
+
+                <div class="stat-card">
+
+                    <div class="stat-icon cyan">
+                        <i class="fa-solid fa-comments"></i>
+                    </div>
+
+                    <div class="stat-info">
+
+                        <span>رسائل المساعد</span>
+
+                        <strong id="messageCount">0</strong>
+
+                    </div>
+
+                </div>
+
+
+                <div class="stat-card">
+
+                    <div class="stat-icon orange">
+                        <i class="fa-solid fa-code"></i>
+                    </div>
+
+                    <div class="stat-info">
+
+                        <span>أدوات المطور</span>
+
+                        <strong>08</strong>
+
+                    </div>
+
+                </div>
+
+
+                <div class="stat-card">
+
+                    <div class="stat-icon green">
+                        <i class="fa-solid fa-bolt"></i>
+                    </div>
+
+                    <div class="stat-info">
+
+                        <span>حالة النظام</span>
+
+                        <strong class="online-text">متصل</strong>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+
+            <!-- QUICK TOOLS -->
+
+            <div class="section-heading">
 
                 <div>
-                    <strong>AI</strong>
-                    <span>مساعد المطور</span>
+
+                    <h2>أدواتك الرئيسية</h2>
+
+                    <p>اختر الأداة التي تريد استخدامها.</p>
+
                 </div>
 
-                <div>
-                    <strong>LUAU</strong>
-                    <span>برمجة Roblox</span>
-                </div>
-
-                <div>
-                    <strong>ULTRA</strong>
-                    <span>بيئة التطوير</span>
-                </div>
+                <span class="section-tag">DEVELOPER TOOLS</span>
 
             </div>
 
-        </div>
 
-        <div class="hero-visual">
+            <div class="tools-grid">
 
-            <div class="main-orb">
-                <div class="orb-inner">
-                    <span>G</span>
-                    <small>AI</small>
+
+                <div class="tool-card" onclick="openTool('chat')">
+
+                    <div class="tool-card-icon purple">
+                        <i class="fa-solid fa-robot"></i>
+                    </div>
+
+                    <h3>مساعد المطور</h3>
+
+                    <p>اسأل عن البرمجة، الأنظمة، وأفكار الألعاب.</p>
+
+                    <div class="tool-card-footer">
+
+                        <span>فتح الأداة</span>
+
+                        <i class="fa-solid fa-arrow-left"></i>
+
+                    </div>
+
                 </div>
+
+
+                <div class="tool-card" onclick="openTool('scripts')">
+
+                    <div class="tool-card-icon cyan">
+                        <i class="fa-solid fa-code"></i>
+                    </div>
+
+                    <h3>مختبر السكربتات</h3>
+
+                    <p>أنشئ قوالب سكربتات Roblox وعدّل عليها.</p>
+
+                    <div class="tool-card-footer">
+
+                        <span>فتح الأداة</span>
+
+                        <i class="fa-solid fa-arrow-left"></i>
+
+                    </div>
+
+                </div>
+
+
+                <div class="tool-card" onclick="openTool('ideas')">
+
+                    <div class="tool-card-icon orange">
+                        <i class="fa-solid fa-lightbulb"></i>
+                    </div>
+
+                    <h3>أفكار المابات</h3>
+
+                    <p>اكتشف أفكار ألعاب جديدة وأنظمة مبتكرة.</p>
+
+                    <div class="tool-card-footer">
+
+                        <span>فتح الأداة</span>
+
+                        <i class="fa-solid fa-arrow-left"></i>
+
+                    </div>
+
+                </div>
+
+
+                <div class="tool-card" onclick="openTool('gui')">
+
+                    <div class="tool-card-icon pink">
+                        <i class="fa-solid fa-palette"></i>
+                    </div>
+
+                    <h3>مصمم الواجهات</h3>
+
+                    <p>خطط واجهات المتجر والإدارة والإحصائيات.</p>
+
+                    <div class="tool-card-footer">
+
+                        <span>فتح الأداة</span>
+
+                        <i class="fa-solid fa-arrow-left"></i>
+
+                    </div>
+
+                </div>
+
+
+                <div class="tool-card" onclick="openTool('errors')">
+
+                    <div class="tool-card-icon red">
+                        <i class="fa-solid fa-bug"></i>
+                    </div>
+
+                    <h3>محلل الأخطاء</h3>
+
+                    <p>افهم رسائل الأخطاء وابحث عن أسبابها.</p>
+
+                    <div class="tool-card-footer">
+
+                        <span>فتح الأداة</span>
+
+                        <i class="fa-solid fa-arrow-left"></i>
+
+                    </div>
+
+                </div>
+
+
+                <div class="tool-card" onclick="openTool('projects')">
+
+                    <div class="tool-card-icon green">
+                        <i class="fa-solid fa-folder-open"></i>
+                    </div>
+
+                    <h3>إدارة المشاريع</h3>
+
+                    <p>احفظ أفكارك ومشاريعك داخل المنصة.</p>
+
+                    <div class="tool-card-footer">
+
+                        <span>فتح الأداة</span>
+
+                        <i class="fa-solid fa-arrow-left"></i>
+
+                    </div>
+
+                </div>
+
+
             </div>
 
-            <div class="floating-card card-top">
-                ⚡ SMART DEVELOPMENT
-            </div>
 
-            <div class="floating-card card-bottom">
-                🎮 GAME CREATION
-            </div>
+            <!-- QUICK START -->
 
-        </div>
+            <div class="quick-start-panel">
 
-    </section>
+                <div class="quick-start-content">
 
+                    <div class="quick-start-icon">
 
-    <!-- TOOLS -->
+                        <i class="fa-solid fa-rocket"></i>
 
-    <section class="section" id="tools">
-
-        <div class="section-heading">
-            <span class="section-label">DEVELOPER TOOLS</span>
-            <h2>أدوات <span>التطوير</span></h2>
-            <p>كل ما تحتاجه لبناء ألعابك.</p>
-        </div>
-
-        <div class="tools-grid">
-
-            <article class="tool-card">
-                <div class="tool-icon purple">💻</div>
-                <h3>مولد السكربتات</h3>
-                <p>أنشئ أكواد Roblox مع شرح طريقة التركيب.</p>
-                <button onclick="openTool('script')">فتح الأداة ←</button>
-            </article>
-
-            <article class="tool-card">
-                <div class="tool-icon cyan">💡</div>
-                <h3>مولد الأفكار</h3>
-                <p>اكتشف أفكار مابات وأنظمة ألعاب جديدة.</p>
-                <button onclick="openTool('ideas')">فتح الأداة ←</button>
-            </article>
-
-            <article class="tool-card">
-                <div class="tool-icon pink">🎨</div>
-                <h3>مخطط الواجهات</h3>
-                <p>خطط واجهات GUI وأزرار لعبتك.</p>
-                <button onclick="openTool('gui')">فتح الأداة ←</button>
-            </article>
-
-            <article class="tool-card">
-                <div class="tool-icon orange">🔧</div>
-                <h3>محلل الأخطاء</h3>
-                <p>حلل أخطاء البرمجة وابحث عن أسبابها.</p>
-                <button onclick="openTool('errors')">فتح الأداة ←</button>
-            </article>
-
-        </div>
-
-    </section>
-
-
-    <!-- AI ASSISTANT -->
-
-    <section class="section assistant-section" id="assistant">
-
-        <div class="section-heading">
-            <span class="section-label">ARTIFICIAL INTELLIGENCE</span>
-            <h2>مساعد <span>GAMEDEV AI</span></h2>
-            <p>مساعدك في عالم صناعة الألعاب.</p>
-        </div>
-
-        <div class="assistant-container">
-
-            <div class="assistant-header">
-
-                <div class="assistant-profile">
-
-                    <div class="assistant-avatar">G</div>
+                    </div>
 
                     <div>
-                        <h3>GAMEDEV AI ULTRA</h3>
-                        <span>
-                            <i class="status-dot"></i>
-                            جاهز للمساعدة
-                        </span>
-                    </div>
 
-                </div>
+                        <h3>هل لديك مشروع جديد؟</h3>
 
-                <button id="clearChat" class="small-button">
-                    🗑️ مسح المحادثة
-                </button>
-
-            </div>
-
-
-            <div class="chat-messages" id="chatMessages">
-
-                <div class="message bot-message">
-
-                    <div class="message-avatar">G</div>
-
-                    <div class="message-content">
-
-                        <strong>GAMEDEV AI</strong>
-
-                        <p>
-                            أهلًا بك في GAMEDEV AI ULTRA X! 🚀
-
-                            أستطيع مساعدتك في تطوير ألعاب Roblox،
-                            إنشاء السكربتات، ابتكار المابات،
-                            تصميم الأنظمة وحل الأخطاء.
-
-                            ما المشروع الذي تريد العمل عليه؟
-                        </p>
+                        <p>ابدأ بإنشاء مشروعك واحفظ أفكارك في مساحة العمل.</p>
 
                     </div>
 
                 </div>
 
-            </div>
 
+                <button class="primary-button" onclick="openTool('projects')">
 
-            <div class="quick-prompts">
+                    <i class="fa-solid fa-plus"></i>
 
-                <button onclick="usePrompt('أريد إنشاء نظام عملات كامل في Roblox')">
-                    💰 نظام العملات
-                </button>
+                    مشروعي الجديد
 
-                <button onclick="usePrompt('أعطني فكرة ماب Roblox احترافية')">
-                    💡 فكرة ماب
-                </button>
-
-                <button onclick="usePrompt('اشرح لي طريقة استخدام RemoteEvents')">
-                    📚 تعلم البرمجة
-                </button>
-
-                <button onclick="usePrompt('أريد تصميم واجهة متجر احترافية')">
-                    🎨 تصميم واجهة
                 </button>
 
             </div>
 
 
-            <form class="chat-input-area" id="chatForm">
-
-                <textarea
-                    id="chatInput"
-                    placeholder="اكتب طلبك إلى GAMEDEV AI..."
-                    rows="1"
-                ></textarea>
-
-                <button type="submit" id="sendButton">
-                    ➤
-                </button>
-
-            </form>
-
-            <div class="chat-disclaimer">
-                محرك المعرفة المحلي لا يمثل نموذج ذكاء اصطناعي خارجيًا.
-            </div>
-
-        </div>
-
-    </section>
+        </section>
 
 
-    <!-- CODE EDITOR -->
 
-    <section class="section" id="editor">
+        <!-- =================================
+             PAGE: AI CHAT
+        ================================== -->
 
-        <div class="section-heading">
-            <span class="section-label">CODE WORKSPACE</span>
-            <h2>محرر <span>الأكواد</span></h2>
-            <p>اكتب أكوادك وانسخها أو حمّلها.</p>
-        </div>
+        <section class="page" id="page-chat">
 
-        <div class="code-workspace">
 
-            <div class="code-header">
+            <div class="page-header">
 
                 <div>
-                    <span class="code-dot red"></span>
-                    <span class="code-dot yellow"></span>
-                    <span class="code-dot green"></span>
-                    <strong>Roblox Studio</strong>
+
+                    <span class="page-overline">AI DEVELOPMENT ASSISTANT</span>
+
+                    <h1>مساعد المطور الذكي</h1>
+
+                    <p>مساعدك في البرمجة وتطوير ألعاب Roblox.</p>
+
                 </div>
 
-                <span class="code-language">LUAU</span>
+                <div class="assistant-status">
+
+                    <span class="status-dot"></span>
+
+                    جاهز للمساعدة
+
+                </div>
 
             </div>
 
-            <textarea
-                id="codeEditor"
-                spellcheck="false"
-                placeholder="-- ابدأ كتابة كود Luau هنا..."
-            ></textarea>
 
-            <div class="code-actions">
+            <div class="chat-layout">
 
-                <button onclick="copyCode()">📋 نسخ الكود</button>
-                <button onclick="downloadCode()">⬇️ تحميل Lua</button>
-                <button onclick="clearCode()">🗑️ مسح</button>
+
+                <div class="chat-main">
+
+                    <div class="chat-topbar">
+
+                        <div class="chat-assistant-info">
+
+                            <div class="assistant-avatar">
+
+                                <i class="fa-solid fa-robot"></i>
+
+                            </div>
+
+                            <div>
+
+                                <strong>GAMEDEV AI</strong>
+
+                                <small>مساعد تطوير الألعاب</small>
+
+                            </div>
+
+                        </div>
+
+
+                        <button class="icon-button" id="clearChat" title="مسح المحادثة">
+
+                            <i class="fa-solid fa-trash"></i>
+
+                        </button>
+
+                    </div>
+
+
+
+                    <div class="chat-messages" id="chatMessages">
+
+
+                        <div class="empty-state" id="assistant">
+
+                            <div class="empty-state-icon">
+
+                                <i class="fa-solid fa-wand-magic-sparkles"></i>
+
+                            </div>
+
+                            <h2>أهلاً بك في GAMEDEV AI</h2>
+
+                            <p>وش المشروع اللي تشتغل عليه اليوم؟</p>
+
+
+                            <div class="suggestion-list">
+
+                                <button onclick="usePrompt('أعطني فكرة ماب Roblox جديدة ومميزة')">
+
+                                    <i class="fa-solid fa-lightbulb"></i>
+
+                                    اقترح فكرة ماب
+
+                                </button>
+
+
+                                <button onclick="usePrompt('اكتب لي نظام عملات كامل في Roblox')">
+
+                                    <i class="fa-solid fa-coins"></i>
+
+                                    نظام العملات
+
+                                </button>
+
+
+                                <button onclick="usePrompt('اشرح لي RemoteEvent في Roblox')">
+
+                                    <i class="fa-solid fa-book"></i>
+
+                                    شرح البرمجة
+
+                                </button>
+
+
+                                <button onclick="usePrompt('ساعدني في إصلاح خطأ في سكربت Roblox')">
+
+                                    <i class="fa-solid fa-bug"></i>
+
+                                    إصلاح خطأ
+
+                                </button>
+
+                            </div>
+
+                        </div>
+
+
+                    </div>
+
+
+
+                    <form class="chat-form" id="chatForm">
+
+                        <div class="chat-input-wrapper">
+
+                            <textarea
+                                id="chatInput"
+                                placeholder="اكتب سؤالك أو فكرتك هنا..."
+                                rows="1"
+                            ></textarea>
+
+
+                            <button type="submit" class="send-button">
+
+                                <i class="fa-solid fa-paper-plane"></i>
+
+                            </button>
+
+                        </div>
+
+
+                        <div class="chat-footer">
+
+                            <span>
+
+                                <i class="fa-solid fa-circle-info"></i>
+
+                                راجع الأكواد واختبرها قبل استخدامها.
+
+                            </span>
+
+                            <span>GAMEDEV AI ULTRA</span>
+
+                        </div>
+
+                    </form>
+
+
+                </div>
+
+
+
+                <aside class="chat-sidebar">
+
+                    <h3>أدوات سريعة</h3>
+
+
+                    <button onclick="usePrompt('أريد نظام DataStore لحفظ بيانات اللاعبين')">
+
+                        <i class="fa-solid fa-database"></i>
+
+                        DataStore
+
+                    </button>
+
+
+                    <button onclick="usePrompt('أريد نظام Rebirth كامل')">
+
+                        <i class="fa-solid fa-rotate"></i>
+
+                        Rebirth System
+
+                    </button>
+
+
+                    <button onclick="usePrompt('أريد نظام متجر احترافي')">
+
+                        <i class="fa-solid fa-store"></i>
+
+                        Shop System
+
+                    </button>
+
+
+                    <button onclick="usePrompt('أريد نظام Leaderstats')">
+
+                        <i class="fa-solid fa-chart-simple"></i>
+
+                        Leaderstats
+
+                    </button>
+
+
+                    <div class="chat-tip">
+
+                        <i class="fa-solid fa-lightbulb"></i>
+
+                        <strong>نصيحة للمطور</strong>
+
+                        <p>اذكر نوع اللعبة ومكان السكربت والوظيفة المطلوبة للحصول على نتيجة أدق.</p>
+
+                    </div>
+
+                </aside>
+
 
             </div>
 
-        </div>
 
-    </section>
+        </section>
 
 
-    <!-- PROJECTS -->
 
-    <section class="section" id="projects">
+        <!-- =================================
+             PAGE: SCRIPT LAB
+        ================================== -->
 
-        <div class="section-heading">
-            <span class="section-label">MY PROJECTS</span>
-            <h2>مشاريعي <span>البرمجية</span></h2>
-            <p>احتفظ بأفكارك ومشاريعك في مكان واحد.</p>
-        </div>
+        <section class="page" id="page-scripts">
 
-        <div class="project-panel">
 
-            <div class="project-form">
+            <div class="page-header">
 
-                <input
-                    id="projectName"
-                    type="text"
-                    placeholder="اسم المشروع"
-                >
+                <div>
 
-                <textarea
-                    id="projectDescription"
-                    placeholder="وصف المشروع..."
-                ></textarea>
+                    <span class="page-overline">ROBLOX LUA DEVELOPMENT</span>
 
-                <button onclick="addProject()">
-                    + إضافة مشروع
+                    <h1>مختبر السكربتات</h1>
+
+                    <p>اكتب وعدّل واحفظ أكواد Roblox Lua.</p>
+
+                </div>
+
+            </div>
+
+
+
+            <div class="editor-panel">
+
+
+                <div class="editor-header">
+
+                    <div class="editor-file">
+
+                        <i class="fa-solid fa-file-code"></i>
+
+                        <span>Script.lua</span>
+
+                    </div>
+
+
+                    <div class="editor-actions">
+
+                        <button class="secondary-button" onclick="clearCode()">
+
+                            <i class="fa-solid fa-eraser"></i>
+
+                            مسح
+
+                        </button>
+
+
+                        <button class="secondary-button" onclick="copyCode()">
+
+                            <i class="fa-solid fa-copy"></i>
+
+                            نسخ
+
+                        </button>
+
+
+                        <button class="primary-button" onclick="downloadCode()">
+
+                            <i class="fa-solid fa-download"></i>
+
+                            تحميل
+
+                        </button>
+
+                    </div>
+
+                </div>
+
+
+
+                <div class="editor-body">
+
+                    <div class="editor-line-numbers" id="lineNumbers">
+
+                        1
+
+                    </div>
+
+
+                    <textarea
+                        id="codeEditor"
+                        spellcheck="false"
+                        placeholder="-- اكتب كود Roblox Lua هنا
+
+local Players = game:GetService('Players')
+
+Players.PlayerAdded:Connect(function(player)
+
+    print('Welcome ' .. player.Name)
+
+end)"
+                    ></textarea>
+
+                </div>
+
+
+
+                <div class="editor-footer">
+
+                    <span>Lua / Luau</span>
+
+                    <span>Roblox Development</span>
+
+                    <span id="editorStatus">جاهز</span>
+
+                </div>
+
+
+            </div>
+
+
+            <div class="editor-info-grid">
+
+                <div class="info-card">
+
+                    <i class="fa-solid fa-server"></i>
+
+                    <strong>ServerScript</strong>
+
+                    <small>منطق اللعبة على السيرفر</small>
+
+                </div>
+
+
+                <div class="info-card">
+
+                    <i class="fa-solid fa-desktop"></i>
+
+                    <strong>LocalScript</strong>
+
+                    <small>التحكم المحلي والواجهات</small>
+
+                </div>
+
+
+                <div class="info-card">
+
+                    <i class="fa-solid fa-box"></i>
+
+                    <strong>ModuleScript</strong>
+
+                    <small>تنظيم وإعادة استخدام الكود</small>
+
+                </div>
+
+            </div>
+
+
+        </section>
+
+
+
+        <!-- =================================
+             PAGE: IDEAS
+        ================================== -->
+
+        <section class="page" id="page-ideas">
+
+
+            <div class="page-header">
+
+                <div>
+
+                    <span class="page-overline">GAME CONCEPT GENERATOR</span>
+
+                    <h1>أفكار المابات</h1>
+
+                    <p>ابتكر أفكار ألعاب جديدة وطور مشاريعك.</p>
+
+                </div>
+
+            </div>
+
+
+
+            <div class="generator-panel">
+
+                <div class="field-group">
+
+                    <label for="ideaCategory">تصنيف اللعبة</label>
+
+                    <select id="ideaCategory">
+
+                        <option value="random">عشوائي</option>
+
+                        <option value="life">حياة واقعية</option>
+
+                        <option value="survival">بقاء ونجاة</option>
+
+                        <option value="simulator">Simulator</option>
+
+                        <option value="obby">Obby</option>
+
+                        <option value="roleplay">Roleplay</option>
+
+                    </select>
+
+                </div>
+
+
+                <div class="field-group">
+
+                    <label for="ideaDetails">تفاصيل إضافية</label>
+
+                    <textarea id="ideaDetails" placeholder="اكتب نوع الماب الذي تريده..."></textarea>
+
+                </div>
+
+
+                <button class="primary-button" onclick="generateIdea()">
+
+                    <i class="fa-solid fa-wand-magic-sparkles"></i>
+
+                    ابتكر فكرة جديدة
+
+                </button>
+
+
+                <div id="ideaResult" class="generator-result"></div>
+
+            </div>
+
+
+        </section>
+
+
+
+        <!-- =================================
+             PAGE: GUI DESIGNER
+        ================================== -->
+
+        <section class="page" id="page-gui">
+
+
+            <div class="page-header">
+
+                <div>
+
+                    <span class="page-overline">USER INTERFACE DESIGN</span>
+
+                    <h1>مصمم الواجهات</h1>
+
+                    <p>خطط واجهات ألعابك بطريقة منظمة.</p>
+
+                </div>
+
+            </div>
+
+
+
+            <div class="generator-panel">
+
+                <div class="field-group">
+
+                    <label for="guiCategory">نوع الواجهة</label>
+
+                    <select id="guiCategory">
+
+                        <option value="shop">متجر</option>
+
+                        <option value="inventory">حقيبة</option>
+
+                        <option value="admin">لوحة إدارة</option>
+
+                        <option value="stats">إحصائيات</option>
+
+                        <option value="rebirth">Rebirth</option>
+
+                        <option value="settings">إعدادات</option>
+
+                    </select>
+
+                </div>
+
+
+                <div class="field-group">
+
+                    <label for="guiDetails">وصف الواجهة</label>
+
+                    <textarea id="guiDetails" placeholder="مثلاً: متجر فيه 10 منتجات وأزرار شراء..."></textarea>
+
+                </div>
+
+
+                <button class="primary-button" onclick="generateGUI()">
+
+                    <i class="fa-solid fa-palette"></i>
+
+                    إنشاء مخطط الواجهة
+
+                </button>
+
+
+                <div id="guiResult" class="generator-result"></div>
+
+            </div>
+
+
+        </section>
+
+
+
+        <!-- =================================
+             PAGE: ERROR ANALYZER
+        ================================== -->
+
+        <section class="page" id="page-errors">
+
+
+            <div class="page-header">
+
+                <div>
+
+                    <span class="page-overline">CODE DEBUGGING CENTER</span>
+
+                    <h1>محلل الأخطاء</h1>
+
+                    <p>ضع رسالة الخطأ أو الكود للحصول على مساعدة.</p>
+
+                </div>
+
+            </div>
+
+
+
+            <div class="generator-panel">
+
+                <div class="field-group">
+
+                    <label for="errorInput">رسالة الخطأ أو الكود</label>
+
+                    <textarea
+                        id="errorInput"
+                        class="large-textarea"
+                        placeholder="الصق رسالة الخطأ هنا..."
+                    ></textarea>
+
+                </div>
+
+
+                <button class="primary-button" onclick="analyzeError()">
+
+                    <i class="fa-solid fa-magnifying-glass"></i>
+
+                    تحليل الخطأ
+
+                </button>
+
+
+                <div id="errorResult" class="generator-result"></div>
+
+            </div>
+
+
+        </section>
+
+
+
+        <!-- =================================
+             PAGE: PROJECTS
+        ================================== -->
+
+        <section class="page" id="page-projects">
+
+
+            <div class="page-header">
+
+                <div>
+
+                    <span class="page-overline">PROJECT MANAGEMENT</span>
+
+                    <h1>مشاريعي</h1>
+
+                    <p>احتفظ بأفكارك ومشاريعك في مكان واحد.</p>
+
+                </div>
+
+            </div>
+
+
+
+            <div class="project-create-panel">
+
+                <div class="project-create-heading">
+
+                    <i class="fa-solid fa-folder-plus"></i>
+
+                    <h3>إنشاء مشروع جديد</h3>
+
+                </div>
+
+
+                <div class="field-group">
+
+                    <label for="projectName">اسم المشروع</label>
+
+                    <input
+                        type="text"
+                        id="projectName"
+                        placeholder="مثلاً: My Roblox Game"
+                    >
+
+                </div>
+
+
+                <div class="field-group">
+
+                    <label for="projectDescription">وصف المشروع</label>
+
+                    <textarea
+                        id="projectDescription"
+                        placeholder="اكتب وصفاً مختصراً لمشروعك..."
+                    ></textarea>
+
+                </div>
+
+
+                <button class="primary-button" onclick="addProject()">
+
+                    <i class="fa-solid fa-plus"></i>
+
+                    حفظ المشروع
+
                 </button>
 
             </div>
 
-            <div class="projects-list" id="projectsList">
 
-                <div class="empty-state">
-                    🚀 ابدأ بإضافة مشروعك الأول.
+
+            <div class="section-heading">
+
+                <div>
+
+                    <h2>قائمة المشاريع</h2>
+
+                    <p>مشاريعك المحفوظة محلياً.</p>
+
                 </div>
 
             </div>
 
-        </div>
 
-    </section>
+            <div class="projects-grid" id="projectsList">
+
+                <div class="empty-projects">
+
+                    <i class="fa-solid fa-folder-open"></i>
+
+                    <p>لا توجد مشاريع حتى الآن.</p>
+
+                </div>
+
+            </div>
 
 
-    <!-- STUDIO LITE -->
+        </section>
 
-    <section class="section studio-section">
 
-        <div class="studio-banner">
+
+        <!-- =================================
+             PAGE: CODE LIBRARY
+        ================================== -->
+
+        <section class="page" id="page-library">
+
+
+            <div class="page-header">
+
+                <div>
+
+                    <span class="page-overline">DEVELOPER RESOURCE LIBRARY</span>
+
+                    <h1>مكتبة الأكواد</h1>
+
+                    <p>مجموعة من المفاهيم والقوالب البرمجية.</p>
+
+                </div>
+
+            </div>
+
+
+
+            <div class="library-grid">
+
+
+                <div class="library-card">
+
+                    <div class="library-icon">
+                        <i class="fa-solid fa-coins"></i>
+                    </div>
+
+                    <h3>Coins System</h3>
+
+                    <p>نظام العملات والإحصائيات.</p>
+
+                    <button onclick="usePrompt('أريد سكربت نظام عملات Coins كامل')">
+
+                        اطلب السكربت
+
+                        <i class="fa-solid fa-arrow-left"></i>
+
+                    </button>
+
+                </div>
+
+
+                <div class="library-card">
+
+                    <div class="library-icon">
+                        <i class="fa-solid fa-database"></i>
+                    </div>
+
+                    <h3>DataStore</h3>
+
+                    <p>حفظ بيانات اللاعبين.</p>
+
+                    <button onclick="usePrompt('اشرح لي نظام DataStore مع سكربت كامل')">
+
+                        اطلب السكربت
+
+                        <i class="fa-solid fa-arrow-left"></i>
+
+                    </button>
+
+                </div>
+
+
+                <div class="library-card">
+
+                    <div class="library-icon">
+                        <i class="fa-solid fa-rotate"></i>
+                    </div>
+
+                    <h3>Rebirth</h3>
+
+                    <p>نظام إعادة الولادة والترقيات.</p>
+
+                    <button onclick="usePrompt('أريد نظام Rebirth متكامل')">
+
+                        اطلب السكربت
+
+                        <i class="fa-solid fa-arrow-left"></i>
+
+                    </button>
+
+                </div>
+
+
+                <div class="library-card">
+
+                    <div class="library-icon">
+                        <i class="fa-solid fa-door-open"></i>
+                    </div>
+
+                    <h3>Doors System</h3>
+
+                    <p>أبواب تحتاج شروطاً للفتح.</p>
+
+                    <button onclick="usePrompt('أريد نظام أبواب تحتاج Power لفتحها')">
+
+                        اطلب السكربت
+
+                        <i class="fa-solid fa-arrow-left"></i>
+
+                    </button>
+
+                </div>
+
+
+                <div class="library-card">
+
+                    <div class="library-icon">
+                        <i class="fa-solid fa-bolt"></i>
+                    </div>
+
+                    <h3>Speed System</h3>
+
+                    <p>أنظمة السرعة والتطوير.</p>
+
+                    <button onclick="usePrompt('أريد نظام سرعة وتطوير Speed')">
+
+                        اطلب السكربت
+
+                        <i class="fa-solid fa-arrow-left"></i>
+
+                    </button>
+
+                </div>
+
+
+                <div class="library-card">
+
+                    <div class="library-icon">
+                        <i class="fa-solid fa-trophy"></i>
+                    </div>
+
+                    <h3>Wins System</h3>
+
+                    <p>نظام الفوز والمكافآت.</p>
+
+                    <button onclick="usePrompt('أريد نظام Wins ومكافآت كامل')">
+
+                        اطلب السكربت
+
+                        <i class="fa-solid fa-arrow-left"></i>
+
+                    </button>
+
+                </div>
+
+
+            </div>
+
+
+        </section>
+
+
+
+        <!-- =================================
+             PAGE: SETTINGS
+        ================================== -->
+
+        <section class="page" id="page-settings">
+
+
+            <div class="page-header">
+
+                <div>
+
+                    <span class="page-overline">APPLICATION PREFERENCES</span>
+
+                    <h1>الإعدادات</h1>
+
+                    <p>إعدادات المنصة وبيئة العمل.</p>
+
+                </div>
+
+            </div>
+
+
+
+            <div class="settings-panel">
+
+
+                <div class="settings-row">
+
+                    <div class="settings-info">
+
+                        <i class="fa-solid fa-moon"></i>
+
+                        <div>
+
+                            <strong>المظهر</strong>
+
+                            <small>تغيير مظهر المنصة.</small>
+
+                        </div>
+
+                    </div>
+
+
+                    <button class="secondary-button" onclick="document.getElementById('themeToggle').click()">
+
+                        تغيير المظهر
+
+                    </button>
+
+                </div>
+
+
+                <div class="settings-row">
+
+                    <div class="settings-info">
+
+                        <i class="fa-solid fa-trash"></i>
+
+                        <div>
+
+                            <strong>مسح المحادثة</strong>
+
+                            <small>حذف سجل المحادثة المحفوظ محلياً.</small>
+
+                        </div>
+
+                    </div>
+
+
+                    <button class="secondary-button" onclick="clearChat()">
+
+                        مسح المحادثة
+
+                    </button>
+
+                </div>
+
+
+                <div class="settings-row">
+
+                    <div class="settings-info">
+
+                        <i class="fa-solid fa-circle-info"></i>
+
+                        <div>
+
+                            <strong>معلومات المنصة</strong>
+
+                            <small>GAMEDEV AI ULTRA.</small>
+
+                        </div>
+
+                    </div>
+
+
+                    <span class="settings-version">V1.0</span>
+
+                </div>
+
+
+            </div>
+
+
+        </section>
+
+
+
+        <!-- =================================
+             GLOBAL TOAST
+        ================================== -->
+
+        <div class="toast-container" id="toast"></div>
+
+
+        <!-- =================================
+             FOOTER
+        ================================== -->
+
+        <footer class="main-footer">
 
             <div>
 
-                <span class="section-label">ROBLOX DEVELOPMENT</span>
+                <strong>GAMEDEV AI <span>ULTRA</span></strong>
 
-                <h2>STUDIO LITE <span>PRO</span></h2>
-
-                <p>
-                    أدوات خاصة لمطوري Roblox Studio Lite.
-                    أنشئ السكربتات وخطط المابات وطور مشاريعك.
-                </p>
-
-                <a href="studio-lite.html" class="primary-button">
-                    ⚡ افتح STUDIO LITE PRO
-                </a>
+                <p>بيئة إبداعية لمطوري الألعاب.</p>
 
             </div>
 
-            <div class="studio-symbol">
-                🎮
+
+            <div class="footer-links">
+
+                <a href="studio-lite.html">STUDIO LITE</a>
+
+                <span>© 2026 GAMEDEV AI</span>
+
             </div>
 
-        </div>
-
-    </section>
+        </footer>
 
 
-</main>
+    </main>
+
+</div>
 
 
-<!-- FOOTER -->
+<!-- =====================================
+     JAVASCRIPT
+===================================== -->
 
-<footer class="footer">
-
-    <div class="brand footer-brand">
-
-        <div class="brand-icon">G</div>
-
-        <div>
-            <h2>GAMEDEV <span>AI</span></h2>
-            <small>ULTRA X DEVELOPER PLATFORM</small>
-        </div>
-
-    </div>
-
-    <p>اصنع أفكارك. اكتب أكوادك. ابنِ ألعابك.</p>
-
-    <div class="footer-bottom">
-        © 2026 GAMEDEV AI - جميع الحقوق محفوظة
-    </div>
-
-</footer>
-
-
-<div id="toast" class="toast"></div>
-
-<script src="script.js"></script>
+<script src="script.js" defer></script>
 
 </body>
+
 </html>
