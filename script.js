@@ -105,17 +105,14 @@ const App = {
 ============================================================ */
 
 function initializeLoading() {
-    const loader = $("loadingScreen");
+    const loader = document.getElementById("loadingScreen");
 
     if (!loader) return;
 
-    setTimeout(() => {
-        loader.classList.add("loaded");
-
-        setTimeout(() => {
-            loader.style.display = "none";
-        }, 700);
-    }, 900);
+    loader.style.opacity = "0";
+    loader.style.visibility = "hidden";
+    loader.style.pointerEvents = "none";
+    loader.style.display = "none";
 }
 
 /* ============================================================
