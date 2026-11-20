@@ -3,147 +3,946 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Studio Lite PRO | GAMEDEV AI</title>
+<title>STUDIO LITE PRO MAX</title>
+
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
 <style>
-*{margin:0;padding:0;box-sizing:border-box}
-body{font-family:Cairo,sans-serif;background:#080914;color:#fff;min-height:100vh}
-:root{--purple:#8b5cf6;--cyan:#22d3ee;--panel:#121426;--muted:#9295ad}
-header{height:75px;border-bottom:1px solid #ffffff12;display:flex;align-items:center;justify-content:space-between;padding:0 6%;background:#0c0d1bf0;position:sticky;top:0;z-index:5}
-.logo{font-size:21px;font-weight:900;background:linear-gradient(90deg,#a78bfa,#22d3ee);background-clip:text;color:transparent}
-.back{color:#c4b5fd;text-decoration:none;font-size:13px}
-.hero{text-align:center;padding:65px 20px 40px;background:radial-gradient(ellipse at top,#5126a933,transparent 65%)}
-.badge{display:inline-block;padding:7px 16px;border:1px solid #8b5cf655;border-radius:30px;color:#c4b5fd;font-size:12px;margin-bottom:18px}
-h1{font-size:clamp(30px,6vw,54px);font-weight:900}
-h1 span{background:linear-gradient(90deg,#a78bfa,#22d3ee);background-clip:text;color:transparent}
-.hero p{color:var(--muted);margin:12px auto;max-width:600px;font-size:14px}
-.container{width:min(1100px,92%);margin:auto;padding:20px 0 60px}
-.section-title{font-size:20px;font-weight:900;margin:25px 0 17px}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:15px}
-.card{background:linear-gradient(145deg,#17192e,#101221);border:1px solid #ffffff12;border-radius:18px;padding:21px;transition:.25s;cursor:pointer}
-.card:hover{transform:translateY(-5px);border-color:#8b5cf688;box-shadow:0 12px 35px #8b5cf618}
-.icon{font-size:29px;margin-bottom:12px}
-.card h3{font-size:16px;margin-bottom:6px}
-.card p{font-size:12px;color:var(--muted);line-height:1.9}
-.tag{display:inline-block;font-size:10px;color:#67e8f9;background:#22d3ee12;padding:4px 9px;border-radius:20px;margin-top:12px}
-.workspace{margin-top:30px;background:var(--panel);border:1px solid #ffffff12;border-radius:20px;padding:22px}
-.workspace h2{font-size:19px;margin-bottom:8px}
-.desc{font-size:12px;color:var(--muted);margin-bottom:18px}
-label{display:block;font-size:13px;margin:13px 0 7px}
-input,select,textarea{width:100%;padding:13px;background:#090b18;color:#fff;border:1px solid #ffffff20;border-radius:11px;font-family:inherit;outline:none}
-input:focus,select:focus,textarea:focus{border-color:var(--purple)}
-textarea{min-height:125px;resize:vertical;line-height:1.8}
-button{font-family:inherit;cursor:pointer;border:0;border-radius:10px;padding:11px 18px;font-weight:800}
-.primary{background:linear-gradient(90deg,#7c3aed,#2563eb);color:white;margin-top:15px}
-.secondary{background:#ffffff12;color:#ddd;margin-top:10px}
-.output{margin-top:17px;display:none}
-.output pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#080a15;border:1px solid #ffffff15;border-radius:12px;padding:16px;direction:ltr;text-align:left;font:13px Consolas,monospace;line-height:1.8;color:#a5f3fc;max-height:400px;overflow:auto}
-.notice{font-size:11px;color:#fbbf24;margin-top:12px;line-height:1.8}
-footer{text-align:center;padding:25px;color:#686b83;font-size:11px;border-top:1px solid #ffffff10}
-@media(max-width:600px){header{padding:0 4%}.workspace{padding:16px}.hero{padding-top:45px}}
+:root {
+    --bg: #080912;
+    --panel: #111323;
+    --panel2: #171a2e;
+    --purple: #8b5cf6;
+    --cyan: #22d3ee;
+    --text: #f5f3ff;
+    --muted: #9698b3;
+    --border: rgba(255,255,255,.08);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Cairo', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+
+body::before {
+    content: "";
+    position: fixed;
+    width: 600px;
+    height: 600px;
+    background: #702cff;
+    filter: blur(180px);
+    opacity: .13;
+    top: -250px;
+    right: -150px;
+    pointer-events: none;
+}
+
+body::after {
+    content: "";
+    position: fixed;
+    width: 500px;
+    height: 500px;
+    background: #00d9ff;
+    filter: blur(180px);
+    opacity: .08;
+    bottom: -250px;
+    left: -150px;
+    pointer-events: none;
+}
+
+button, input, textarea, select {
+    font-family: inherit;
+}
+
+button {
+    cursor: pointer;
+    border: none;
+}
+
+.navbar {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    height: 75px;
+    padding: 0 7%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(8,9,18,.85);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 21px;
+    font-weight: 900;
+}
+
+.logo-icon {
+    width: 42px;
+    height: 42px;
+    display: grid;
+    place-items: center;
+    border-radius: 14px;
+    background: linear-gradient(135deg,var(--purple),#4f46e5);
+    box-shadow: 0 0 25px #8b5cf655;
+}
+
+.logo span {
+    color: var(--cyan);
+}
+
+.nav-status {
+    color: #4ade80;
+    font-size: 12px;
+    background: #4ade8012;
+    padding: 7px 14px;
+    border-radius: 30px;
+    border: 1px solid #4ade8033;
+}
+
+.container {
+    width: min(1200px, 90%);
+    margin: auto;
+}
+
+.hero {
+    text-align: center;
+    padding: 65px 15px 45px;
+    position: relative;
+}
+
+.hero-badge {
+    display: inline-block;
+    color: #c4b5fd;
+    background: #8b5cf61a;
+    border: 1px solid #8b5cf644;
+    padding: 7px 17px;
+    border-radius: 30px;
+    font-size: 12px;
+    margin-bottom: 20px;
+}
+
+.hero h1 {
+    font-size: clamp(35px,6vw,65px);
+    font-weight: 900;
+    line-height: 1.3;
+}
+
+.gradient-text {
+    background: linear-gradient(90deg,#a78bfa,#22d3ee,#a78bfa);
+    background-size: 200%;
+    -webkit-background-clip: text;
+    color: transparent;
+    animation: gradient 5s linear infinite;
+}
+
+@keyframes gradient {
+    to { background-position: 200%; }
+}
+
+.hero p {
+    color: var(--muted);
+    margin-top: 15px;
+    font-size: 15px;
+}
+
+.stats {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    flex-wrap: wrap;
+    margin-top: 30px;
+}
+
+.stat {
+    background: #ffffff08;
+    border: 1px solid var(--border);
+    border-radius: 13px;
+    padding: 12px 23px;
+    min-width: 115px;
+}
+
+.stat strong {
+    display: block;
+    color: var(--cyan);
+    font-size: 20px;
+}
+
+.stat small {
+    color: var(--muted);
+}
+
+.main-grid {
+    display: grid;
+    grid-template-columns: 250px 1fr;
+    gap: 22px;
+    padding-bottom: 70px;
+}
+
+.sidebar, .workspace {
+    background: rgba(17,19,35,.88);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 20px;
+    backdrop-filter: blur(15px);
+}
+
+.sidebar h3 {
+    color: var(--muted);
+    font-size: 12px;
+    margin: 5px 10px 15px;
+}
+
+.tool-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    text-align: right;
+    padding: 14px;
+    margin-bottom: 8px;
+    border-radius: 12px;
+    color: #b7b8d0;
+    background: transparent;
+    transition: .25s;
+    font-weight: 700;
+}
+
+.tool-btn:hover, .tool-btn.active {
+    background: linear-gradient(90deg,#8b5cf625,#22d3ee10);
+    color: white;
+    transform: translateX(-3px);
+    border-right: 3px solid var(--purple);
+}
+
+.tool-icon {
+    font-size: 20px;
+}
+
+.sidebar-info {
+    margin-top: 25px;
+    padding: 15px;
+    background: #8b5cf612;
+    border: 1px solid #8b5cf622;
+    border-radius: 13px;
+    font-size: 12px;
+    color: #c4b5fd;
+    line-height: 2;
+}
+
+.workspace {
+    min-height: 570px;
+}
+
+.tool-page {
+    display: none;
+    animation: appear .3s ease;
+}
+
+.tool-page.active {
+    display: block;
+}
+
+@keyframes appear {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.page-heading {
+    margin-bottom: 25px;
+}
+
+.page-heading h2 {
+    font-size: 24px;
+    font-weight: 900;
+}
+
+.page-heading p {
+    color: var(--muted);
+    font-size: 13px;
+    margin-top: 5px;
+}
+
+.field {
+    margin-bottom: 18px;
+}
+
+.field label {
+    display: block;
+    font-size: 13px;
+    color: #c9c9dc;
+    margin-bottom: 8px;
+    font-weight: 700;
+}
+
+.field input, .field textarea, .field select {
+    width: 100%;
+    background: #090b17;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    color: white;
+    outline: none;
+    padding: 13px 15px;
+    font-size: 13px;
+    transition: .2s;
+}
+
+.field input:focus, .field textarea:focus, .field select:focus {
+    border-color: var(--purple);
+    box-shadow: 0 0 0 3px #8b5cf61a;
+}
+
+.field textarea {
+    resize: vertical;
+    min-height: 110px;
+}
+
+.field select option {
+    background: #111323;
+}
+
+.primary-btn {
+    background: linear-gradient(100deg,#7c3aed,#4f46e5);
+    color: white;
+    padding: 13px 23px;
+    border-radius: 11px;
+    font-weight: 900;
+    transition: .25s;
+    box-shadow: 0 5px 20px #7c3aed33;
+}
+
+.primary-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px #7c3aed66;
+}
+
+.secondary-btn {
+    background: #ffffff0b;
+    color: white;
+    border: 1px solid var(--border);
+    padding: 11px 17px;
+    border-radius: 10px;
+    font-weight: 700;
+}
+
+.output {
+    margin-top: 25px;
+    display: none;
+    background: #090b17;
+    border: 1px solid var(--border);
+    border-radius: 15px;
+    overflow: hidden;
+}
+
+.output.show {
+    display: block;
+    animation: appear .3s ease;
+}
+
+.output-header {
+    padding: 13px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #ffffff06;
+    border-bottom: 1px solid var(--border);
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.output-header strong {
+    font-size: 13px;
+}
+
+.output-actions {
+    display: flex;
+    gap: 7px;
+}
+
+.small-btn {
+    padding: 7px 12px;
+    border-radius: 8px;
+    color: white;
+    background: #8b5cf626;
+    font-size: 11px;
+}
+
+.output pre {
+    padding: 20px;
+    overflow-x: auto;
+    direction: ltr;
+    text-align: left;
+    color: #a5f3fc;
+    font: 13px/1.8 Consolas, monospace;
+    white-space: pre;
+    min-height: 100px;
+}
+
+.result-text {
+    padding: 20px;
+    line-height: 2.2;
+    color: #deddf1;
+    font-size: 14px;
+    white-space: pre-wrap;
+}
+
+.cards {
+    display: grid;
+    grid-template-columns: repeat(2,1fr);
+    gap: 13px;
+    margin-top: 20px;
+}
+
+.feature-card {
+    padding: 17px;
+    border-radius: 14px;
+    background: #ffffff06;
+    border: 1px solid var(--border);
+}
+
+.feature-card strong {
+    display: block;
+    margin-bottom: 7px;
+}
+
+.feature-card p {
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.9;
+}
+
+.footer {
+    text-align: center;
+    padding: 25px;
+    color: #777990;
+    border-top: 1px solid var(--border);
+    font-size: 12px;
+}
+
+.toast {
+    position: fixed;
+    bottom: 25px;
+    left: 25px;
+    z-index: 9999;
+    background: #171a2e;
+    border: 1px solid #8b5cf6;
+    color: white;
+    padding: 13px 20px;
+    border-radius: 12px;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: .3s;
+    pointer-events: none;
+}
+
+.toast.show {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.back-link {
+    text-decoration: none;
+    color: #c4b5fd;
+    font-size: 12px;
+}
+
+@media(max-width:850px) {
+    .main-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .sidebar {
+        display: grid;
+        grid-template-columns: repeat(2,1fr);
+        gap: 5px;
+    }
+
+    .sidebar h3, .sidebar-info {
+        grid-column: 1/-1;
+    }
+
+    .tool-btn {
+        margin: 0;
+    }
+}
+
+@media(max-width:550px) {
+    .navbar {
+        padding: 0 5%;
+    }
+
+    .hero {
+        padding-top: 45px;
+    }
+
+    .sidebar {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .cards {
+        grid-template-columns: 1fr;
+    }
+
+    .workspace {
+        padding: 15px;
+    }
+}
 </style>
 </head>
+
 <body>
 
-<header>
-<div class="logo">GAMEDEV AI</div>
-<a class="back" href="index.html">← العودة للموقع</a>
-</header>
+<nav class="navbar">
+    <div class="logo">
+        <div class="logo-icon">⚡</div>
+        STUDIO <span>LITE</span>
+    </div>
+
+    <div class="nav-status">● النظام جاهز</div>
+</nav>
 
 <section class="hero">
-<div class="badge">⚡ SPECIAL EDITION FOR ROBLOX</div>
-<h1>STUDIO LITE <span>PRO</span></h1>
-<p>مساعدك لتطوير ألعاب Roblox باستخدام Studio Lite. أفكار، أنظمة، سكربتات وأدوات في مكان واحد.</p>
+    <div class="hero-badge">ROBLOX DEVELOPMENT TOOLKIT</div>
+
+    <h1>
+        اصنع لعبتك مع
+        <br>
+        <span class="gradient-text">STUDIO LITE PRO</span>
+    </h1>
+
+    <p>أدوات ذكية تساعدك في تطوير ألعاب Roblox وصناعة أفكار وأنظمة جديدة.</p>
+
+    <div class="stats">
+        <div class="stat">
+            <strong>06</strong>
+            <small>أدوات تطوير</small>
+        </div>
+
+        <div class="stat">
+            <strong>24/7</strong>
+            <small>متاح دائماً</small>
+        </div>
+
+        <div class="stat">
+            <strong>PRO</strong>
+            <small>وضع المطور</small>
+        </div>
+    </div>
 </section>
 
 <main class="container">
-<h2 class="section-title">🚀 أدوات المطور</h2>
+<div class="main-grid">
 
-<div class="grid">
-<div class="card" onclick="choose('script')">
-<div class="icon">💻</div><h3>مولّد السكربتات</h3>
-<p>أنشئ نماذج سكربتات Roblox Luau قابلة للتعديل.</p>
-<span class="tag">LUAU</span>
+<aside class="sidebar">
+    <h3>أدوات المطور</h3>
+
+    <button class="tool-btn active" onclick="openTool('script',this)">
+        <span class="tool-icon">💻</span>
+        مولد السكربتات
+    </button>
+
+    <button class="tool-btn" onclick="openTool('ideas',this)">
+        <span class="tool-icon">🗺️</span>
+        أفكار المابات
+    </button>
+
+    <button class="tool-btn" onclick="openTool('gui',this)">
+        <span class="tool-icon">🎨</span>
+        مخطط الواجهات
+    </button>
+
+    <button class="tool-btn" onclick="openTool('errors',this)">
+        <span class="tool-icon">🛠️</span>
+        محلل الأخطاء
+    </button>
+
+    <button class="tool-btn" onclick="openTool('explain',this)">
+        <span class="tool-icon">📚</span>
+        شرح البرمجة
+    </button>
+
+    <button class="tool-btn" onclick="openTool('about',this)">
+        <span class="tool-icon">🚀</span>
+        عن المنصة
+    </button>
+
+    <div class="sidebar-info">
+        ⚡ STUDIO LITE PRO
+        <br>
+        مساعد تطوير Roblox.
+        <br>
+        أنشئ، جرّب، وطوّر!
+    </div>
+
+    <a class="back-link" href="index.html">← العودة للموقع الرئيسي</a>
+</aside>
+
+<section class="workspace">
+
+<!-- SCRIPT GENERATOR -->
+<div class="tool-page active" id="page-script">
+
+    <div class="page-heading">
+        <h2>💻 مولد السكربتات</h2>
+        <p>اختر النظام الذي تريد إنشاءه وحدد مكان وضع السكربت.</p>
+    </div>
+
+    <div class="field">
+        <label>نوع النظام</label>
+        <select id="scriptType">
+            <option value="coins">نظام العملات Coins</option>
+            <option value="leaderstats">نظام Leaderstats</option>
+            <option value="speed">زيادة السرعة Speed Pad</option>
+            <option value="kill">Kill Brick</option>
+            <option value="checkpoint">Checkpoint</option>
+            <option value="door">باب يحتاج نقاط</option>
+            <option value="rebirth">نظام Rebirth</option>
+            <option value="teleport">نظام Teleport</option>
+            <option value="heal">منطقة علاج</option>
+        </select>
+    </div>
+
+    <div class="field">
+        <label>اسم النظام</label>
+        <input id="scriptName" placeholder="مثلاً: MyCoinsSystem">
+    </div>
+
+    <div class="field">
+        <label>مكان السكربت</label>
+        <select id="scriptLocation">
+            <option>ServerScriptService</option>
+            <option>StarterPlayerScripts</option>
+            <option>StarterGui</option>
+            <option>Workspace</option>
+            <option>ReplicatedStorage</option>
+        </select>
+    </div>
+
+    <button class="primary-btn" onclick="generateScript()">⚡ إنشاء السكربت</button>
+
+    <div class="output" id="scriptOutput">
+        <div class="output-header">
+            <strong>📄 Script Output</strong>
+            <div class="output-actions">
+                <button class="small-btn" onclick="copyOutput('scriptCode')">نسخ</button>
+                <button class="small-btn" onclick="downloadOutput('scriptCode','RobloxScript.lua')">تحميل Lua</button>
+            </div>
+        </div>
+        <pre id="scriptCode"></pre>
+    </div>
+
 </div>
-<div class="card" onclick="choose('map')">
-<div class="icon">🏗️</div><h3>أفكار المابات</h3>
-<p>اكتشف أفكار ألعاب ومابات جديدة ومميزة.</p>
-<span class="tag">MAP IDEAS</span>
+
+<!-- MAP IDEAS -->
+<div class="tool-page" id="page-ideas">
+
+    <div class="page-heading">
+        <h2>🗺️ مولد أفكار المابات</h2>
+        <p>اكتشف أفكار جديدة لمابات Roblox.</p>
+    </div>
+
+    <div class="field">
+        <label>نوع الماب</label>
+        <select id="mapType">
+            <option value="random">فكرة عشوائية</option>
+            <option value="life">حياة واقعية</option>
+            <option value="horror">رعب وبقاء</option>
+            <option value="simulator">Simulator</option>
+            <option value="obby">Obby</option>
+            <option value="roleplay">Roleplay</option>
+            <option value="survival">نجاة وتحديات</option>
+        </select>
+    </div>
+
+    <div class="field">
+        <label>تفاصيل إضافية (اختياري)</label>
+        <textarea id="mapDetails" placeholder="مثلاً: أبي ماب عربي فيه وظائف وترقيات..."></textarea>
+    </div>
+
+    <button class="primary-btn" onclick="generateMap()">🌌 ابتكر فكرة ماب</button>
+
+    <div class="output" id="mapOutput">
+        <div class="output-header">
+            <strong>💡 فكرة الماب</strong>
+            <div class="output-actions">
+                <button class="small-btn" onclick="copyOutput('mapResult')">نسخ</button>
+                <button class="small-btn" onclick="downloadOutput('mapResult','MapIdea.txt')">تحميل</button>
+            </div>
+        </div>
+        <div class="result-text" id="mapResult"></div>
+    </div>
+
 </div>
-<div class="card" onclick="choose('gui')">
-<div class="icon">🎨</div><h3>مصمم الواجهات</h3>
-<p>خطط لقوائم المتجر والإحصائيات والأزرار.</p>
-<span class="tag">GUI DESIGN</span>
+
+<!-- GUI PLANNER -->
+<div class="tool-page" id="page-gui">
+
+    <div class="page-heading">
+        <h2>🎨 مخطط واجهات GUI</h2>
+        <p>جهّز تصوراً أولياً لواجهات لعبتك.</p>
+    </div>
+
+    <div class="field">
+        <label>نوع الواجهة</label>
+        <select id="guiType">
+            <option value="shop">متجر Shop</option>
+            <option value="inventory">حقيبة Inventory</option>
+            <option value="stats">الإحصائيات Stats</option>
+            <option value="admin">لوحة الإدارة Admin</option>
+            <option value="rebirth">واجهة Rebirth</option>
+            <option value="settings">الإعدادات Settings</option>
+            <option value="loading">شاشة التحميل Loading</option>
+        </select>
+    </div>
+
+    <div class="field">
+        <label>اسم لعبتك</label>
+        <input id="gameName" placeholder="اسم اللعبة">
+    </div>
+
+    <button class="primary-btn" onclick="generateGUI()">🎨 إنشاء مخطط الواجهة</button>
+
+    <div class="output" id="guiOutput">
+        <div class="output-header">
+            <strong>📐 GUI Structure</strong>
+            <div class="output-actions">
+                <button class="small-btn" onclick="copyOutput('guiResult')">نسخ</button>
+                <button class="small-btn" onclick="downloadOutput('guiResult','GUIPlan.txt')">تحميل</button>
+            </div>
+        </div>
+        <div class="result-text" id="guiResult"></div>
+    </div>
+
 </div>
-<div class="card" onclick="choose('error')">
-<div class="icon">🛠️</div><h3>مساعد الأخطاء</h3>
-<p>افهم رسائل الأخطاء واحصل على خطوات للفحص.</p>
-<span class="tag">DEBUG HELP</span>
-</div>
-</div>
 
-<section class="workspace" id="workspace">
-<h2>🧠 مساحة العمل الذكية</h2>
-<p class="desc">اختر أداة من الأعلى أو اكتب طلبك لبدء العمل.</p>
+<!-- ERROR ANALYZER -->
+<div class="tool-page" id="page-errors">
 
-<label>نوع الأداة</label>
-<select id="tool">
-<option value="script">مولّد السكربتات</option>
-<option value="map">أفكار المابات</option>
-<option value="gui">مصمم الواجهات</option>
-<option value="error">مساعد الأخطاء</option>
-</select>
+    <div class="page-heading">
+        <h2>🛠️ محلل الأخطاء</h2>
+        <p>ضع رسالة الخطأ أو الكود لتحصل على إرشادات تساعدك في إصلاحه.</p>
+    </div>
 
-<label>اكتب طلبك</label>
-<textarea id="request" placeholder="مثال: أبي سكربت يعطي اللاعب 100 كوين عند لمس قطعة..."></textarea>
+    <div class="field">
+        <label>رسالة الخطأ أو الكود</label>
+        <textarea id="errorInput" style="min-height:170px" placeholder="الصق الخطأ هنا..."></textarea>
+    </div>
 
-<button class="primary" onclick="generate()">✨ إنشاء النتيجة</button>
-<button class="secondary" onclick="clearAll()">مسح</button>
+    <button class="primary-btn" onclick="analyzeError()">🔍 تحليل المشكلة</button>
 
-<div class="output" id="output">
-<h3 style="margin-bottom:10px">📄 النتيجة</h3>
-<pre id="result"></pre>
-<button class="primary" onclick="copyResult()">📋 نسخ النتيجة</button>
-<button class="secondary" onclick="downloadResult()">⬇️ تحميل كملف TXT</button>
+    <div class="output" id="errorOutput">
+        <div class="output-header">
+            <strong>🔎 نتيجة التحليل</strong>
+            <button class="small-btn" onclick="copyOutput('errorResult')">نسخ</button>
+        </div>
+        <div class="result-text" id="errorResult"></div>
+    </div>
+
 </div>
 
-<p class="notice">⚠️ هذه نسخة محلية تجريبية تعتمد على قوالب وأمثلة مدمجة، وليست اتصالًا بنموذج ذكاء اصطناعي حقيقي. اختبر السكربتات في نسخة تجريبية قبل استخدامها في لعبتك.</p>
+<!-- EXPLAIN -->
+<div class="tool-page" id="page-explain">
+
+    <div class="page-heading">
+        <h2>📚 شرح البرمجة</h2>
+        <p>تعلم أساسيات Roblox Lua بطريقة مبسطة.</p>
+    </div>
+
+    <div class="field">
+        <label>اختر الموضوع</label>
+        <select id="explainType">
+            <option value="server">ServerScript</option>
+            <option value="local">LocalScript</option>
+            <option value="module">ModuleScript</option>
+            <option value="remote">RemoteEvent</option>
+            <option value="datastore">DataStore</option>
+            <option value="leaderstats">Leaderstats</option>
+            <option value="tween">TweenService</option>
+            <option value="humanoid">Humanoid</option>
+        </select>
+    </div>
+
+    <button class="primary-btn" onclick="explainTopic()">📖 اشرح لي</button>
+
+    <div class="output" id="explainOutput">
+        <div class="output-header">
+            <strong>📘 الشرح</strong>
+            <button class="small-btn" onclick="copyOutput('explainResult')">نسخ</button>
+        </div>
+        <div class="result-text" id="explainResult"></div>
+    </div>
+
+</div>
+
+<!-- ABOUT -->
+<div class="tool-page" id="page-about">
+
+    <div class="page-heading">
+        <h2>🚀 عن STUDIO LITE PRO</h2>
+        <p>مساحة أدوات تساعد مطوري Roblox في بناء مشاريعهم.</p>
+    </div>
+
+    <div class="cards">
+        <div class="feature-card">
+            <strong>💻 Script Generator</strong>
+            <p>إنشاء قوالب برمجية لأنظمة Roblox المختلفة.</p>
+        </div>
+
+        <div class="feature-card">
+            <strong>🗺️ Map Ideas</strong>
+            <p>اقتراح أفكار مابات وأنماط لعب متنوعة.</p>
+        </div>
+
+        <div class="feature-card">
+            <strong>🎨 GUI Planner</strong>
+            <p>تخطيط مكونات واجهات المستخدم.</p>
+        </div>
+
+        <div class="feature-card">
+            <strong>🛠️ Error Helper</strong>
+            <p>مساعدة أولية لفهم رسائل الأخطاء.</p>
+        </div>
+    </div>
+
+    <div class="sidebar-info" style="margin-top:25px">
+        ⚠️ تنبيه: الأدوات الحالية تعمل محلياً داخل المتصفح وتعتمد على قوالب وقواعد معرفة مدمجة. نتائجها تحتاج مراجعة واختبار داخل Roblox Studio قبل استخدامها في لعبتك.
+    </div>
+
+</div>
+
 </section>
+</div>
 </main>
 
-<footer>STUDIO LITE PRO · POWERED BY GAMEDEV AI</footer>
+<footer class="footer">
+    STUDIO LITE PRO MAX © 2026 — MADE FOR GAME DEVELOPERS ⚡
+</footer>
+
+<div class="toast" id="toast">تم بنجاح!</div>
 
 <script>
-const tool=document.getElementById('tool');
-const request=document.getElementById('request');
-const output=document.getElementById('output');
-const result=document.getElementById('result');
+"use strict";
 
-function choose(type){
- tool.value=type;
- document.getElementById('workspace').scrollIntoView({behavior:'smooth'});
- const hints={
- script:'اكتب النظام الذي تريد إنشاء نموذج له...',
- map:'مثال: أبي فكرة ماب حياة واقعية خليجية...',
- gui:'مثال: أبي واجهة متجر فيها أزرار شراء...',
- error:'الصق رسالة الخطأ والجزء المتعلق بها هنا...'
- };
- request.placeholder=hints[type];
- request.focus();
+/* ===============================
+   STUDIO LITE PRO MAX ENGINE
+================================ */
+
+const $ = id => document.getElementById(id);
+
+function toast(message) {
+    const box = $("toast");
+    box.textContent = message;
+    box.classList.add("show");
+
+    setTimeout(() => {
+        box.classList.remove("show");
+    }, 2500);
 }
 
-function generate(){
- const text=request.value.trim();
- if(!text){alert('اكتب طلبك أولاً!');return}
- const type=tool.value;
- let answer='';
+function openTool(name, button) {
+    document.querySelectorAll(".tool-page").forEach(page => {
+        page.classList.remove("active");
+    });
 
- if(type==='script'){
-  if(/كوين|عملة|فلوس|coin|money/i.test(text)){
-   answer=`-- نموذج نظام Coins
--- ضع Script داخل ServerScriptService
+    document.querySelectorAll(".tool-btn").forEach(btn => {
+        btn.classList.remove("active");
+    });
 
-game.Players.PlayerAdded:Connect(function(player)
+    const page = $("page-" + name);
+
+    if (page) page.classList.add("active");
+    if (button) button.classList.add("active");
+}
+
+function showOutput(id) {
+    $(id).classList.add("show");
+}
+
+function copyOutput(id) {
+    const element = $(id);
+    const text = element.innerText || element.textContent;
+
+    if (!text.trim()) {
+        toast("لا يوجد محتوى لنسخه!");
+        return;
+    }
+
+    if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text)
+            .then(() => toast("تم نسخ المحتوى بنجاح!"))
+            .catch(() => fallbackCopy(text));
+    } else {
+        fallbackCopy(text);
+    }
+}
+
+function fallbackCopy(text) {
+    const area = document.createElement("textarea");
+    area.value = text;
+    area.style.position = "fixed";
+    area.style.opacity = "0";
+    document.body.appendChild(area);
+    area.select();
+
+    try {
+        document.execCommand("copy");
+        toast("تم النسخ!");
+    } catch {
+        toast("تعذر النسخ، حاول مرة أخرى.");
+    }
+
+    area.remove();
+}
+
+function downloadOutput(id, filename) {
+    const text = $(id).innerText || $(id).textContent;
+
+    if (!text.trim()) {
+        toast("لا يوجد محتوى للتحميل!");
+        return;
+    }
+
+    const blob = new Blob([text], {
+        type: "text/plain;charset=utf-8"
+    });
+
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+
+    link.href = url;
+    link.download = filename;
+    link.click();
+
+    URL.revokeObjectURL(url);
+    toast("بدأ تحميل الملف!");
+}
+
+/* ===============================
+   SCRIPT GENERATOR
+================================ */
+
+const scripts = {
+
+coins: `-- Coins System
+-- Place inside ServerScriptService
+
+local Players = game:GetService("Players")
+
+Players.PlayerAdded:Connect(function(player)
+
     local leaderstats = Instance.new("Folder")
     leaderstats.Name = "leaderstats"
     leaderstats.Parent = player
@@ -152,119 +951,731 @@ game.Players.PlayerAdded:Connect(function(player)
     coins.Name = "Coins"
     coins.Value = 0
     coins.Parent = leaderstats
-end)
 
--- هذا نموذج مبدئي. لا يحتوي على حفظ بيانات.`;
-  }else if(/سرعة|speed/i.test(text)){
-   answer=`-- نموذج قطعة زيادة السرعة
--- ضع Script داخل Part
+end)`,
 
-local part = script.Parent
-local boostSpeed = 32
+leaderstats: `-- Leaderstats System
+-- Place inside ServerScriptService
 
-part.Touched:Connect(function(hit)
+local Players = game:GetService("Players")
+
+Players.PlayerAdded:Connect(function(player)
+
+    local leaderstats = Instance.new("Folder")
+    leaderstats.Name = "leaderstats"
+    leaderstats.Parent = player
+
+    local coins = Instance.new("IntValue")
+    coins.Name = "Coins"
+    coins.Value = 0
+    coins.Parent = leaderstats
+
+    local wins = Instance.new("IntValue")
+    wins.Name = "Wins"
+    wins.Value = 0
+    wins.Parent = leaderstats
+
+    local rebirths = Instance.new("IntValue")
+    rebirths.Name = "Rebirths"
+    rebirths.Value = 0
+    rebirths.Parent = leaderstats
+
+end)`,
+
+speed: `-- Speed Pad
+-- Place this Script inside a Part
+
+local pad = script.Parent
+local SPEED = 50
+local DURATION = 5
+
+local debounce = {}
+
+pad.Touched:Connect(function(hit)
+
     local character = hit.Parent
     local humanoid = character:FindFirstChildOfClass("Humanoid")
 
-    if humanoid then
-        humanoid.WalkSpeed = boostSpeed
-    end
-end)`;
-  }else if(/قتل|kill|موت/i.test(text)){
-   answer=`-- Kill Brick
--- ضع Script داخل Part
+    if not humanoid then return end
 
-local part = script.Parent
+    if debounce[character] then return end
+    debounce[character] = true
 
-part.Touched:Connect(function(hit)
+    local oldSpeed = humanoid.WalkSpeed
+    humanoid.WalkSpeed = SPEED
+
+    task.delay(DURATION, function()
+
+        if humanoid and humanoid.Parent then
+            humanoid.WalkSpeed = oldSpeed
+        end
+
+        debounce[character] = nil
+
+    end)
+
+end)`,
+
+kill: `-- Kill Brick
+-- Place this Script inside a Part
+
+local brick = script.Parent
+
+brick.Touched:Connect(function(hit)
+
     local character = hit.Parent
     local humanoid = character:FindFirstChildOfClass("Humanoid")
 
     if humanoid then
         humanoid.Health = 0
     end
-end)`;
-  }else{
-   answer='لم أجد قالباً مطابقاً لطلبك بعد. جرّب طلب نظام Coins أو Speed أو Kill Brick، أو استخدم الطلب لتحديد النظام الذي تريد تطويره لاحقاً.';
-  }
- }
- else if(type==='map'){
-  answer=`اقتراح ماب جديد بناءً على طلبك:
 
-اسم الماب: ${text}
+end)`,
 
-أفكار التطوير:
-1. منطقة بداية فيها شرح للعبة.
-2. مهام يومية ومكافآت.
-3. وظائف بمستويات وترقيات.
-4. متجر خاص بالأدوات والملابس.
-5. أحداث عشوائية لزيادة التفاعل.
-6. نظام حفظ تقدم اللاعبين.
+checkpoint: `-- Checkpoint System
+-- Put this Script inside a checkpoint Part
 
-نصيحة: ابدأ بمنطقة صغيرة واختبر أسلوب اللعب قبل بناء المدينة كاملة.`;
- }
- else if(type==='gui'){
-  answer=`مخطط واجهة GUI:
+local checkpoint = script.Parent
+local Players = game:GetService("Players")
 
-الطلب: ${text}
+checkpoint.Touched:Connect(function(hit)
 
-التقسيم المقترح:
-- ScreenGui
-  - MainFrame
-    - UICorner
-    - UIStroke
-    - Title
-    - CloseButton
-    - ContentFrame
-    - ActionButton
+    local character = hit.Parent
+    local player = Players:GetPlayerFromCharacter(character)
 
-التصميم:
-خلفية داكنة، أزرار بنفسجية، زوايا دائرية، وخط Cairo.
+    if not player then return end
 
-أنشئ العناصر داخل StarterGui ثم اربط الأزرار بـ LocalScript.`;
- }
- else{
-  answer=`مساعد فحص الأخطاء
+    player:SetAttribute("CheckpointPosition", checkpoint.Position)
 
-المشكلة المرسلة:
-${text}
+end)
 
-خطوات الفحص:
-1. اقرأ أول سطر أحمر في Output.
-2. تحقق من اسم Script ومكانه داخل Explorer.
-3. تأكد من تطابق أسماء Parts وFolders.
-4. افحص الأقواس وعلامات الاقتباس.
-5. تأكد من استخدام Script أو LocalScript في المكان الصحيح.
+Players.PlayerAdded:Connect(function(player)
 
-هذه خطوات عامة وليست تشخيصاً مؤكداً. أرسل رسالة الخطأ كاملة للحصول على مساعدة أدق.`;
- }
+    player.CharacterAdded:Connect(function(character)
 
- result.textContent=answer;
- output.style.display='block';
- output.scrollIntoView({behavior:'smooth',block:'nearest'});
+        task.wait(0.5)
+
+        local position = player:GetAttribute("CheckpointPosition")
+
+        if position then
+            character:PivotTo(CFrame.new(position + Vector3.new(0, 4, 0)))
+        end
+
+    end)
+
+end)`,
+
+door: `-- Required Coins Door
+-- Put this Script inside a Part
+
+local door = script.Parent
+local REQUIRED_COINS = 100
+
+local Players = game:GetService("Players")
+local debounce = {}
+
+door.Touched:Connect(function(hit)
+
+    local player = Players:GetPlayerFromCharacter(hit.Parent)
+
+    if not player then return end
+    if debounce[player] then return end
+
+    debounce[player] = true
+
+    local leaderstats = player:FindFirstChild("leaderstats")
+    local coins = leaderstats and leaderstats:FindFirstChild("Coins")
+
+    if coins and coins.Value >= REQUIRED_COINS then
+
+        coins.Value -= REQUIRED_COINS
+
+        door.Transparency = 0.7
+        door.CanCollide = false
+
+        task.wait(3)
+
+        door.Transparency = 0
+        door.CanCollide = true
+
+    end
+
+    task.wait(1)
+    debounce[player] = nil
+
+end)`,
+
+rebirth: `-- Basic Rebirth System
+-- Place inside ServerScriptService
+-- Requires Coins and Rebirths in leaderstats
+
+local Players = game:GetService("Players")
+
+local REQUIRED_COINS = 1000
+
+local function setupPlayer(player)
+
+    local leaderstats = player:WaitForChild("leaderstats")
+
+    local coins = leaderstats:WaitForChild("Coins")
+    local rebirths = leaderstats:WaitForChild("Rebirths")
+
+    player:SetAttribute("CanRebirth", true)
+
+end
+
+Players.PlayerAdded:Connect(setupPlayer)
+
+local function rebirth(player)
+
+    local leaderstats = player:FindFirstChild("leaderstats")
+    if not leaderstats then return false end
+
+    local coins = leaderstats:FindFirstChild("Coins")
+    local rebirths = leaderstats:FindFirstChild("Rebirths")
+
+    if not coins or not rebirths then return false end
+
+    local requirement = REQUIRED_COINS * (rebirths.Value + 1)
+
+    if coins.Value >= requirement then
+
+        coins.Value = 0
+        rebirths.Value += 1
+
+        return true
+
+    end
+
+    return false
+
+end
+
+-- Add a secure RemoteEvent system
+-- before connecting a client Rebirth button.`,
+
+teleport: `-- Teleport Part
+-- Put this Script inside a Part
+
+local part = script.Parent
+local destination = workspace:WaitForChild("Destination")
+
+part.Touched:Connect(function(hit)
+
+    local character = hit.Parent
+    local humanoid = character:FindFirstChildOfClass("Humanoid")
+
+    if not humanoid then return end
+
+    character:PivotTo(destination.CFrame + Vector3.new(0, 4, 0))
+
+end)`,
+
+heal: `-- Healing Zone
+-- Put this Script inside a Part
+
+local zone = script.Parent
+local HEAL_AMOUNT = 25
+local COOLDOWN = 2
+
+local cooldowns = {}
+
+zone.Touched:Connect(function(hit)
+
+    local character = hit.Parent
+    local humanoid = character:FindFirstChildOfClass("Humanoid")
+
+    if not humanoid then return end
+    if cooldowns[humanoid] then return end
+
+    cooldowns[humanoid] = true
+
+    humanoid.Health = math.min(
+        humanoid.MaxHealth,
+        humanoid.Health + HEAL_AMOUNT
+    )
+
+    task.wait(COOLDOWN)
+    cooldowns[humanoid] = nil
+
+end)`
+};
+
+function generateScript() {
+
+    const type = $("scriptType").value;
+    const name = $("scriptName").value.trim() || "GeneratedRobloxScript";
+    const location = $("scriptLocation").value;
+
+    const code = scripts[type];
+
+    const finalCode =
+`-- =====================================
+-- ${name}
+-- Generated by STUDIO LITE PRO MAX
+-- Suggested location: ${location}
+-- =====================================
+
+${code}`;
+
+    $("scriptCode").textContent = finalCode;
+    showOutput("scriptOutput");
+
+    toast("تم إنشاء السكربت!");
 }
 
-function copyResult(){
- navigator.clipboard.writeText(result.textContent)
- .then(()=>alert('تم نسخ النتيجة!'))
- .catch(()=>alert('تعذر النسخ، حدد النص وانسخه يدوياً.'));
+/* ===============================
+   MAP IDEAS GENERATOR
+================================ */
+
+const mapIdeas = {
+
+life: [
+    {
+        name: "مدينة الفرص",
+        desc: "مدينة عربية يستطيع اللاعب فيها البدء من الصفر، والعمل في وظائف متعددة، والترقي من موظف بسيط إلى مدير شركة.",
+        features: "وظائف، رواتب، سيارات، عقارات، نظام ترقية، شركات."
+    },
+    {
+        name: "حياة الحارة",
+        desc: "حي عربي مليء بالمحلات والجيران والمناسبات والوظائف اليومية.",
+        features: "بقالة، مطعم، مدرسة، مستشفى، شرطة، مهام يومية."
+    },
+    {
+        name: "عالم الإعلام",
+        desc: "يبدأ اللاعب كمراسل صغير ويعمل على تغطية الأحداث حتى يصبح مدير قناة.",
+        features: "كاميرات، مقابلات، نشرات أخبار، استوديو، ترقيات."
+    }
+],
+
+horror: [
+    {
+        name: "المحطة المهجورة",
+        desc: "يجد اللاعبون أنفسهم في محطة قديمة وعليهم إصلاح المولد قبل نفاد الوقت.",
+        features: "ألغاز، مفاتيح، أبواب سرية، وحش، مهام."
+    },
+    {
+        name: "الليلة الأخيرة",
+        desc: "على اللاعبين النجاة داخل قرية معزولة خلال ليالٍ تزداد صعوبة.",
+        features: "موارد، بناء، وحوش، طقس، تطوير المنزل."
+    }
+],
+
+simulator: [
+    {
+        name: "مطور الأحلام",
+        desc: "يبني اللاعب استوديو ألعاب ويطور فريقه حتى يصبح أكبر استوديو في المدينة.",
+        features: "توظيف، تطوير، دخل، ترقيات، معدات."
+    },
+    {
+        name: "تاجر السيارات",
+        desc: "يبدأ اللاعب بمحل صغير ويجمع السيارات ويبيعها ويطور معرضه.",
+        features: "مزادات، سيارات، معرض، أرباح، تطوير."
+    }
+],
+
+obby: [
+    {
+        name: "رحلة فوق السحاب",
+        desc: "مراحل باركور مرتفعة تتغير فيها الجاذبية والمنصات باستمرار.",
+        features: "مراحل، نقاط حفظ، مؤثرات، مكافآت."
+    },
+    {
+        name: "مصنع الفخاخ",
+        desc: "مصنع ضخم مليء بالفخاخ المتحركة والأبواب السرية.",
+        features: "ليزر، منصات، أزرار، مصاعد."
+    }
+],
+
+roleplay: [
+    {
+        name: "مملكة الأدوار",
+        desc: "مدينة يستطيع اللاعب فيها اختيار مهنته وبناء شخصيته الخاصة.",
+        features: "رتب، وظائف، منازل، متاجر، مركبات."
+    },
+    {
+        name: "إدارة المدينة",
+        desc: "يبدأ اللاعب مواطناً ويمكنه التدرج حتى الوصول إلى مناصب إدارية.",
+        features: "انتخابات، بلدية، شرطة، اقتصاد، قوانين."
+    }
+],
+
+survival: [
+    {
+        name: "جزيرة العواصف",
+        desc: "جزيرة تتغير فيها الظروف الجوية وعلى اللاعبين جمع الموارد وبناء الملاجئ.",
+        features: "عواصف، موارد، صيد، بناء، تحديات."
+    },
+    {
+        name: "آخر فريق",
+        desc: "تحديات جماعية متغيرة وعلى الفرق التعاون للفوز.",
+        features: "جولات، خرائط متغيرة، جوائز، مهام."
+    }
+]
+};
+
+function generateMap() {
+
+    const type = $("mapType").value;
+    const extra = $("mapDetails").value.trim();
+
+    let category = type;
+
+    if (type === "random") {
+        category = Object.keys(mapIdeas)[
+            Math.floor(Math.random() * Object.keys(mapIdeas).length)
+        ];
+    }
+
+    const list = mapIdeas[category];
+    const idea = list[Math.floor(Math.random() * list.length)];
+
+    const result =
+`🎮 اسم الماب: ${idea.name}
+
+📖 فكرة الماب:
+${idea.desc}
+
+⚙️ الأنظمة المقترحة:
+${idea.features}
+
+⭐ أفكار للتطوير:
+1. نظام مستويات وخبرة.
+2. مكافآت يومية.
+3. متجر خاص باللاعب.
+4. مهام وتحديات متغيرة.
+5. لوحة ترتيب أفضل اللاعبين.
+
+${extra ? "📝 طلبك الإضافي:\n" + extra : ""}
+
+🚀 نصيحة:
+ابدأ ببناء الخريطة الأساسية، ثم أضف الأنظمة واحداً تلو الآخر واختبرها.`;
+
+    $("mapResult").textContent = result;
+    showOutput("mapOutput");
+
+    toast("تم ابتكار فكرة جديدة!");
 }
 
-function downloadResult(){
- const blob=new Blob([result.textContent],{type:'text/plain;charset=utf-8'});
- const url=URL.createObjectURL(blob);
- const a=document.createElement('a');
- a.href=url;
- a.download='StudioLite-Result.txt';
- a.click();
- URL.revokeObjectURL(url);
+/* ===============================
+   GUI PLANNER
+================================ */
+
+const guiTemplates = {
+
+shop: `ScreenGui
+└── ShopFrame
+    ├── UICorner
+    ├── UIStroke
+    ├── Title
+    ├── CloseButton
+    ├── CoinsLabel
+    ├── ItemsScrollingFrame
+    │   ├── UIGridLayout
+    │   └── ItemCard
+    │       ├── ItemImage
+    │       ├── ItemName
+    │       ├── PriceLabel
+    │       └── BuyButton
+    └── LocalScript`,
+
+inventory: `ScreenGui
+└── InventoryFrame
+    ├── Title
+    ├── CloseButton
+    ├── SearchBox
+    ├── Categories
+    ├── ItemsGrid
+    │   └── ItemSlot
+    │       ├── ItemImage
+    │       ├── ItemName
+    │       └── ItemAmount
+    └── LocalScript`,
+
+stats: `ScreenGui
+└── StatsFrame
+    ├── Title
+    ├── PlayerImage
+    ├── PlayerName
+    ├── CoinsFrame
+    ├── WinsFrame
+    ├── LevelFrame
+    └── LocalScript`,
+
+admin: `ScreenGui
+└── AdminPanel
+    ├── Header
+    ├── CloseButton
+    ├── PlayersList
+    ├── SearchBox
+    ├── CommandsFrame
+    │   ├── KickButton
+    │   ├── BanButton
+    │   └── TeleportButton
+    └── AdminLocalScript
+
+-- IMPORTANT:
+-- Admin actions must be validated by the server.`,
+
+rebirth: `ScreenGui
+└── RebirthFrame
+    ├── Title
+    ├── RebirthIcon
+    ├── CurrentRebirths
+    ├── RequiredCoins
+    ├── RewardsFrame
+    ├── RebirthButton
+    └── LocalScript`,
+
+settings: `ScreenGui
+└── SettingsFrame
+    ├── Title
+    ├── CloseButton
+    ├── MusicToggle
+    ├── SoundToggle
+    ├── GraphicsButton
+    └── LocalScript`,
+
+loading: `ScreenGui
+└── LoadingScreen
+    ├── Background
+    ├── GameLogo
+    ├── LoadingText
+    ├── ProgressBar
+    ├── ProgressFill
+    └── LocalScript`
+};
+
+function generateGUI() {
+
+    const type = $("guiType").value;
+    const game = $("gameName").value.trim() || "My Roblox Game";
+
+    const result =
+`🎮 GAME: ${game}
+
+📐 GUI HIERARCHY:
+
+${guiTemplates[type]}
+
+🎨 التصميم المقترح:
+
+• خلفية داكنة.
+• ألوان بنفسجية وسماوية.
+• UICorner للحواف الدائرية.
+• UIStroke للحدود.
+• UIGradient للتدرجات.
+• TweenService للحركات.
+• UIListLayout أو UIGridLayout لترتيب العناصر.
+
+⚠️ ملاحظة:
+هذا مخطط Explorer وليس سكربتاً جاهزاً. أنشئ العناصر في Roblox Studio ثم اربطها بالسكربتات المناسبة.`;
+
+    $("guiResult").textContent = result;
+    showOutput("guiOutput");
+
+    toast("تم إنشاء مخطط الواجهة!");
 }
 
-function clearAll(){
- request.value='';
- result.textContent='';
- output.style.display='none';
+/* ===============================
+   ERROR ANALYZER
+================================ */
+
+function analyzeError() {
+
+    const error = $("errorInput").value.trim();
+
+    if (!error) {
+        toast("اكتب رسالة الخطأ أولاً!");
+        return;
+    }
+
+    const text = error.toLowerCase();
+    let result = "";
+
+    if (text.includes("attempt to index nil")) {
+
+        result =
+"🔴 نوع المشكلة: محاولة استخدام قيمة nil\n\nالسبب المحتمل:\nالمتغير الذي تستخدمه لا يحتوي على كائن صالح.\n\nالحل:\n1. تأكد أن اسم المتغير صحيح.\n2. استخدم WaitForChild عند انتظار عنصر.\n3. تحقق من وجود الكائن قبل استخدامه.\n\nمثال:\nlocal part = workspace:WaitForChild('Part')";
+
+    } else if (text.includes("infinite yield")) {
+
+        result =
+"🟠 نوع المشكلة: Infinite Yield\n\nالسبب المحتمل:\nالسكربت ينتظر عنصراً لم يتم العثور عليه.\n\nالحل:\n1. راجع اسم العنصر.\n2. تأكد من مكانه داخل Explorer.\n3. تأكد أن العنصر يتم إنشاؤه قبل طلبه.";
+
+    } else if (text.includes("not a valid member")) {
+
+        result =
+"🔴 نوع المشكلة: اسم عنصر غير صحيح\n\nالسبب المحتمل:\nتحاول الوصول إلى خاصية أو عنصر غير موجود.\n\nالحل:\n1. راجع كتابة الاسم.\n2. تأكد من Parent الصحيح.\n3. اطبع أسماء العناصر الموجودة للتأكد.";
+
+    } else if (text.includes("attempt to call") || text.includes("not a function")) {
+
+        result =
+"🔴 نوع المشكلة: استدعاء دالة غير صحيحة\n\nالسبب المحتمل:\nتحاول تشغيل قيمة ليست Function.\n\nالحل:\n1. تأكد من اسم الدالة.\n2. تأكد أن المتغير يشير إلى دالة.\n3. راجع الأقواس وطريقة الاستدعاء.";
+
+    } else if (text.includes("syntax") || text.includes("expected")) {
+
+        result =
+"🟠 نوع المشكلة: خطأ في صياغة الكود\n\nالسبب المحتمل:\nقد يكون هناك قوس أو فاصلة أو كلمة ناقصة.\n\nالحل:\n1. راجع الأقواس.\n2. راجع end.\n3. تأكد من إغلاق علامات النصوص.\n4. راجع السطر الذي يشير إليه الخطأ.";
+
+    } else if (text.includes("datastore")) {
+
+        result =
+"🟠 نوع المشكلة: DataStore\n\nأسباب محتملة:\n1. لم يتم تفعيل Enable Studio Access to API Services أثناء اختبار Studio.\n2. مشكلة في صلاحيات أو إعدادات التجربة.\n3. استخدام DataStore من LocalScript.\n\nالحل:\nاستخدم DataStoreService من سكربت سيرفر، وتحقق من إعدادات التجربة.";
+
+    } else if (text.includes("remoteevent") || text.includes("remote event")) {
+
+        result =
+"🟠 نوع المشكلة: RemoteEvent\n\nأسباب محتملة:\n1. اسم RemoteEvent غير صحيح.\n2. مكان RemoteEvent غير صحيح.\n3. استخدام FireServer من السيرفر بدلاً من العميل أو العكس.\n\nالحل:\nراجع مكان الحدث وطريقة استخدام FireServer وFireClient وOnServerEvent.";
+
+    } else {
+
+        result =
+"🔍 تحليل أولي:\n\nلم أتعرف على الخطأ بشكل مؤكد.\n\nجرّب التالي:\n1. راجع السطر المحدد في Output.\n2. تأكد من أسماء العناصر.\n3. تحقق من مكان السكربت.\n4. تأكد من نوع السكربت ServerScript أو LocalScript.\n5. أرسل رسالة الخطأ كاملة مع الكود المحيط بها للحصول على تحليل أدق.\n\n⚠️ هذه مساعدة أولية وليست فحصاً فعلياً للمشروع.";
+
+    }
+
+    $("errorResult").textContent = result;
+    showOutput("errorOutput");
+
+    toast("اكتمل التحليل الأولي!");
 }
+
+/* ===============================
+   EXPLAIN ENGINE
+================================ */
+
+const explanations = {
+
+server: `ServerScript
+
+يعمل على السيرفر داخل اللعبة.
+
+الاستخدامات:
+• إدارة العملات.
+• حفظ البيانات.
+• التحكم باللاعبين.
+• التحقق من عمليات الشراء.
+
+المكان المقترح:
+ServerScriptService`,
+
+local: `LocalScript
+
+يعمل على جهاز اللاعب.
+
+الاستخدامات:
+• واجهات GUI.
+• الأزرار.
+• الكاميرا.
+• المؤثرات المحلية.
+
+أماكن شائعة:
+StarterPlayerScripts
+StarterGui
+StarterCharacterScripts`,
+
+module: `ModuleScript
+
+يستخدم لتنظيم وإعادة استخدام الأكواد.
+
+يمكنك وضع دوال مشتركة فيه ثم استدعاؤها من سكربتات أخرى باستخدام require.
+
+مثال:
+
+local MyModule = {}
+
+function MyModule.Hello()
+    print("Hello!")
+end
+
+return MyModule`,
+
+remote: `RemoteEvent
+
+يسمح بالتواصل بين العميل والسيرفر.
+
+من العميل:
+RemoteEvent:FireServer()
+
+من السيرفر:
+RemoteEvent.OnServerEvent:Connect(function(player)
+    print(player.Name)
+end)
+
+مهم:
+يجب التحقق من طلبات العميل داخل السيرفر وعدم الوثوق بقيمه مباشرة.`,
+
+datastore: `DataStoreService
+
+يستخدم لحفظ بيانات اللاعبين بين الزيارات.
+
+مثال على استخدامه:
+
+local DataStoreService =
+    game:GetService("DataStoreService")
+
+local Store = DataStoreService:GetDataStore("PlayerData")
+
+مهم:
+عمليات الحفظ والتحميل يجب أن تتم من السيرفر، مع استخدام pcall لمعالجة الأخطاء.`,
+
+leaderstats: `Leaderstats
+
+مجلد خاص بعرض إحصائيات اللاعب في لوحة اللاعبين.
+
+غالباً يحتوي على:
+• Coins
+• Wins
+• Level
+• Rebirths
+
+يتم إنشاء مجلد اسمه leaderstats داخل اللاعب، ثم إضافة قيم IntValue أو NumberValue إليه.`,
+
+tween: `TweenService
+
+يستخدم لصناعة الحركات والانتقالات.
+
+أمثلة:
+• تحريك الأزرار.
+• فتح النوافذ.
+• تغيير الحجم.
+• تغيير الشفافية.
+
+يمنح واجهتك حركة ناعمة بدلاً من التغيير المفاجئ.`,
+
+humanoid: `Humanoid
+
+كائن يتحكم بشخصية اللاعب.
+
+خصائص مهمة:
+• WalkSpeed: سرعة المشي.
+• JumpPower: قوة القفز.
+• Health: الصحة الحالية.
+• MaxHealth: الحد الأقصى للصحة.
+
+يمكنك الوصول إليه من شخصية اللاعب باستخدام FindFirstChildOfClass("Humanoid").`
+};
+
+function explainTopic() {
+
+    const type = $("explainType").value;
+
+    $("explainResult").textContent =
+        explanations[type] || "لا يوجد شرح متاح.";
+
+    showOutput("explainOutput");
+
+    toast("تم تجهيز الشرح!");
+}
+
+/* ===============================
+   INITIALIZATION
+================================ */
+
+console.log("STUDIO LITE PRO MAX loaded successfully.");
+
 </script>
+
 </body>
 </html>
