@@ -1,1872 +1,280 @@
+```javascript
 "use strict";
 
-/* ============================================================
-   GAMEDEV AI — ULTRA CORE ENGINE
-   Version 4.0
-   Roblox Game Development Assistant
-============================================================ */
+/* ==========================================
+   GAMEDEV AI — MAIN ENGINE
+   Local browser engine for Roblox developers
+========================================== */
 
-const GD = {
-    version: "4.0.0",
-    storage: {
-        projects: "gdai_projects_v4",
-        theme: "gdai_theme_v4",
-        chat: "gdai_chat_v4"
-    }
+const STORAGE = {
+    projects: "gamedev_ai_projects_v3",
+    messages: "gamedev_ai_messages_v3",
+    library: "gamedev_ai_library_v3",
+    theme: "gamedev_ai_theme_v3"
 };
-
-/* ============================================================
-   HELPERS
-============================================================ */
 
 const $ = (id) => document.getElementById(id);
 
-function safeHTML(value) {
-    return String(value ?? "").replace(/[&<>"']/g, char => ({
-        "&": "&amp;",
-        "<": "&lt;",
-        ">": "&gt;",
-        '"': "&quot;",
-        "'": "&#39;"
-    })[char]);
-}
-
-function readStorage(key, fallback) {
+function readStorage(key, fallback = []) {
     try {
-        const value = localStorage.getItem(key);
-        return value === null ? fallback : JSON.parse(value);
+        const value = JSON.parse(localStorage.getItem(key));
+        return value ?? fallback;
     } catch {
         return fallback;
     }
 }
 
 function writeStorage(key, value) {
-    try {
-        localStorage.setItem(key, JSON.stringify(value));
-        return true;
-    } catch {
-        toast("تعذر الحفظ في جهازك", "error");
-        return false;
-    }
+    localStorage.setItem(key, JSON.stringify(value));
 }
 
-function delay(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
+function escapeHTML(value) {
+    return String(value).replace(/[&<>"']/g, char => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#039;"
+    })[char]);
 }
 
-function randomID() {
-    return "GD-" + Math.random().toString(36).slice(2, 9).toUpperCase();
+/* ==========================================
+   TOAST NOTIFICATIONS
+========================================== */
+
+function showToast(message) {
+    const toast = $("toast");
+    const toastMessage = $("toastMessage");
+
+    if (!toast || !toastMessage) return;
+
+    toastMessage.textContent = message;
+    toast.classList.add("show");
+
+    clearTimeout(showToast.timer);
+    showToast.timer = setTimeout(() => {
+        toast.classList.remove("show");
+    }, 2800);
 }
 
-function formatDate(date = new Date()) {
-    return date.toLocaleDateString("ar-SA", {
-        year: "numeric",
-        month: "short",
-        day: "numeric"
-    });
-}
+window.showToast = showToast;
+window.toast = showToast;
 
-function toast(message, type = "success") {
-    const container = $("toastContainer");
+/* ==========================================
+   PAGE NAVIGATION
+========================================== */
 
-    if (!container) {
-        console.log("[GAMEDEV AI]", message);
-        return;
-    }
-
-    const item = document.createElement("div");
-    item.className = `toast toast-${type}`;
-    item.textContent = message;
-
-    container.appendChild(item);
-
-    requestAnimationFrame(() => item.classList.add("show"));
-
-    setTimeout(() => {
-        item.classList.remove("show");
-        setTimeout(() => item.remove(), 400);
-    }, 3000);
-}
-
-/* ============================================================
-   APP STATE
-============================================================ */
-
-const App = {
-    currentPage: "home",
-    projects: readStorage(GD.storage.projects, []),
-    chat: readStorage(GD.storage.chat, []),
-    theme: localStorage.getItem(GD.storage.theme) || "dark",
-    busy: false
+const pageNames = {
+    home: "الرئيسية",
+    chat: "المساعد الذكي",
+    scripts: "مولد السكربتات",
+    ideas: "أفكار المابات",
+    gui: "تصميم الواجهات",
+    errors: "تحليل الأخطاء",
+    projects: "مشاريعي",
+    library: "مكتبتي",
+    studio: "Studio Lite",
+    settings: "الإعدادات"
 };
 
-/* ============================================================
-   LOADING SCREEN
-============================================================ */
-
-function initializeLoading() {
-    const loader = document.getElementById("loadingScreen");
-
-    if (!loader) return;
-
-    loader.style.opacity = "0";
-    loader.style.visibility = "hidden";
-    loader.style.pointerEvents = "none";
-    loader.style.display = "none";
-}
-
-/* ============================================================
-   NAVIGATION
-============================================================ */
-
 function navigate(page) {
-    const target = $(`page-${page}`);
+    const target = $("page-" + page);
 
     if (!target) {
-        toast("الصفحة غير موجودة", "error");
+        showToast("الصفحة غير موجودة");
         return;
     }
 
-    App.currentPage = page;
-
-    document.querySelectorAll(".page").forEach(section => {
-        section.classList.remove("active");
+    document.querySelectorAll(".page").forEach(item => {
+        item.classList.remove("active");
     });
 
     target.classList.add("active");
 
-    document.querySelectorAll(".nav-item").forEach(button => {
-        button.classList.toggle(
+    document.querySelectorAll(".nav-item").forEach(item => {
+        item.classList.toggle(
             "active",
-            button.dataset.page === page
+            item.dataset.page === page
         );
     });
 
-    const title = $("pageTitle");
-    const subtitle = $("pageSubtitle");
-
-    const pageNames = {
-        home: ["الرئيسية", "لوحة تحكم المطور"],
-        chat: ["المساعد الذكي", "اسأل وطور فكرتك"],
-        scripts: ["مختبر السكربتات", "إنشاء سكربت Roblox"],
-        ideas: ["مولد الأفكار", "اكتشف فكرة لعبتك القادمة"],
-        gui: ["مصمم الواجهات", "خطط واجهات لعبتك"],
-        errors: ["محلل الأخطاء", "حل أخطاء Lua و Roblox"],
-        projects: ["مشاريعي", "إدارة مشاريعك"],
-        library: ["مكتبة السكربتات", "أدوات وسكربتات سريعة"],
-        studio: ["Studio Lite", "أدوات التطوير"],
-        settings: ["الإعدادات", "تخصيص تجربتك"]
-    };
-
-    if (title) title.textContent = pageNames[page]?.[0] || page;
-    if (subtitle) subtitle.textContent = pageNames[page]?.[1] || "";
+    if ($("pageTitle")) {
+        $("pageTitle").textContent = pageNames[page] || page;
+    }
 
     closeSidebar();
     window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
-function initializeNavigation() {
-    document.querySelectorAll("[data-page]").forEach(button => {
-        button.addEventListener("click", () => {
-            navigate(button.dataset.page);
-        });
-    });
-}
+window.navigate = navigate;
 
-function openTool(tool) {
-    const mapping = {
-        chat: "chat",
-        scripts: "scripts",
-        ideas: "ideas",
-        gui: "gui",
-        errors: "errors",
-        projects: "projects",
-        library: "library",
-        studio: "studio"
-    };
-
-    navigate(mapping[tool] || tool);
-}
-
-/* ============================================================
+/* ==========================================
    SIDEBAR
-============================================================ */
+========================================== */
 
 function openSidebar() {
-    const sidebar = $("sidebar");
-    const overlay = $("sidebarOverlay");
-
-    sidebar?.classList.add("open");
-    overlay?.classList.add("active");
+    $("sidebar")?.classList.add("open");
 }
 
 function closeSidebar() {
     $("sidebar")?.classList.remove("open");
-    $("sidebarOverlay")?.classList.remove("active");
 }
 
-function initializeSidebar() {
-    $("menuToggle")?.addEventListener("click", openSidebar);
-    $("sidebarClose")?.addEventListener("click", closeSidebar);
-    $("sidebarOverlay")?.addEventListener("click", closeSidebar);
-}
+window.openSidebar = openSidebar;
+window.closeSidebar = closeSidebar;
 
-/* ============================================================
+/* ==========================================
    THEME SYSTEM
-============================================================ */
+========================================== */
 
 function applyTheme(theme) {
-    App.theme = theme;
+    document.body.classList.toggle(
+        "light-theme",
+        theme === "light"
+    );
 
-    document.documentElement.dataset.theme = theme;
+    const label = theme === "light" ? "الوضع الفاتح" : "الوضع الداكن";
 
-    if (theme === "light") {
-        document.body.classList.add("light-theme");
-    } else {
-        document.body.classList.remove("light-theme");
+    if ($("themeToggle")) {
+        $("themeToggle").title = label;
     }
 
-    localStorage.setItem(GD.storage.theme, theme);
+    if ($("settingsThemeToggle")) {
+        $("settingsThemeToggle").textContent = label;
+    }
 
-    const icon = $("themeIcon");
-    if (icon) icon.textContent = theme === "dark" ? "☀️" : "🌙";
+    writeStorage(STORAGE.theme, theme);
 }
 
 function toggleTheme() {
-    applyTheme(App.theme === "dark" ? "light" : "dark");
-    toast("تم تغيير المظهر");
+    const isLight = document.body.classList.contains("light-theme");
+    applyTheme(isLight ? "dark" : "light");
 }
 
-function initializeTheme() {
-    applyTheme(App.theme);
-    $("themeToggle")?.addEventListener("click", toggleTheme);
+window.toggleTheme = toggleTheme;
+
+/* ==========================================
+   PROJECTS SYSTEM
+========================================== */
+
+let projects = readStorage(STORAGE.projects);
+
+function renderProjects() {
+    const container = $("projectsList");
+    const homeContainer = $("homeRecentProjects");
+
+    const empty = `
+        <div class="empty-state">
+            <p>ما عندك مشاريع حتى الآن.</p>
+        </div>
+    `;
+
+    if (container) {
+        container.innerHTML = projects.length
+            ? projects.map(project => `
+                <div class="project-card">
+                    <h3>${escapeHTML(project.name)}</h3>
+                    <p>${escapeHTML(project.description || "بدون وصف")}</p>
+                    <small>${escapeHTML(project.date)}</small>
+                    <button class="btn btn-danger"
+                        onclick="deleteProject('${project.id}')">
+                        حذف المشروع
+                    </button>
+                </div>
+            `).join("")
+            : empty;
+    }
+
+    if (homeContainer) {
+        homeContainer.innerHTML = projects.length
+            ? projects.slice(-3).reverse().map(project => `
+                <div class="project-card">
+                    <h3>${escapeHTML(project.name)}</h3>
+                    <p>${escapeHTML(project.description || "بدون وصف")}</p>
+                </div>
+            `).join("")
+            : empty;
+    }
+
+    if ($("projectCount")) {
+        $("projectCount").textContent = projects.length;
+    }
 }
 
-/* ============================================================
-   CHAT ENGINE
-   Local response engine — no external API connected.
-============================================================ */
+function addProject() {
+    const name = $("projectName")?.value.trim();
+    const description = $("projectDescription")?.value.trim();
 
-const ChatKnowledge = [
-    {
-        keys: ["سرعة", "speed"],
-        response: `لإنشاء نظام سرعة في Roblox:
+    if (!name) {
+        showToast("اكتب اسم المشروع أولاً");
+        return;
+    }
 
-1. استخدم Humanoid داخل شخصية اللاعب.
-2. غيّر WalkSpeed عند التفعيل.
-3. لا تجعل العميل يحدد السرعة النهائية بنفسه.
-4. استخدم ServerScript للتحقق.
+    projects.push({
+        id: Date.now().toString(),
+        name,
+        description,
+        date: new Date().toLocaleDateString("ar-SA")
+    });
 
-مثال:
+    writeStorage(STORAGE.projects, projects);
 
-local Players = game:GetService("Players")
+    $("projectName").value = "";
+    $("projectDescription").value = "";
 
-Players.PlayerAdded:Connect(function(player)
-    player.CharacterAdded:Connect(function(character)
-        local humanoid = character:WaitForChild("Humanoid")
-        humanoid.WalkSpeed = 30
-    end)
-end)`
-    },
-    {
-        keys: ["فلوس", "مال", "money", "cash"],
-        response: `نظام الأموال:
+    renderProjects();
+    showToast("تم إنشاء المشروع بنجاح");
+}
 
-• أنشئ leaderstats في ServerScriptService.
-• أضف IntValue باسم Cash.
-• استخدم RemoteEvent للطلبات.
-• لا تسمح للعميل بإرسال مبلغ المال مباشرة.
+function deleteProject(id) {
+    if (!confirm("هل تريد حذف هذا المشروع؟")) return;
 
-مثال:
+    projects = projects.filter(project => project.id !== id);
+    writeStorage(STORAGE.projects, projects);
+    renderProjects();
+
+    showToast("تم حذف المشروع");
+}
+
+window.addProject = addProject;
+window.deleteProject = deleteProject;
+
+/* ==========================================
+   ROBLOX SCRIPT GENERATOR
+========================================== */
+
+const scriptTemplates = {
+
+leaderstats: `-- Leaderstats System
+-- ضع هذا السكربت داخل ServerScriptService
 
 game.Players.PlayerAdded:Connect(function(player)
+
     local leaderstats = Instance.new("Folder")
     leaderstats.Name = "leaderstats"
     leaderstats.Parent = player
 
-    local cash = Instance.new("IntValue")
-    cash.Name = "Cash"
-    cash.Value = 0
-    cash.Parent = leaderstats
-end)`
-    },
-    {
-        keys: ["حفظ", "داتا", "data", "datastore"],
-        response: `لحفظ البيانات في Roblox:
-
-• استخدم DataStoreService.
-• الحفظ يكون من السيرفر.
-• استخدم pcall لتجنب توقف السكربت.
-• لا تنس اختبار الحفظ في تجربة منشورة.
-
-مثال:
-
-local DataStoreService =
-    game:GetService("DataStoreService")
-
-local Store = DataStoreService:GetDataStore("PlayerData")
-
-local function savePlayer(player, value)
-    local success, err = pcall(function()
-        Store:SetAsync("Player_" .. player.UserId, value)
-    end)
-
-    if not success then
-        warn("Save failed:", err)
-    end
-end`
-    },
-    {
-        keys: ["باب", "door", "بوابة"],
-        response: `لعمل باب يفتح عند اقتراب اللاعب:
-
-• ضع Part للباب.
-• استخدم ProximityPrompt.
-• اربط حركة الباب بالسيرفر.
-• تحقق من شروط فتح الباب.
-
-مثال بسيط:
-
-local prompt = script.Parent.ProximityPrompt
-local door = script.Parent
-
-prompt.Triggered:Connect(function(player)
-    door.Transparency = 1
-    door.CanCollide = false
-
-    task.wait(3)
-
-    door.Transparency = 0
-    door.CanCollide = true
-end)`
-    },
-    {
-        keys: ["زر", "button", "gui"],
-        response: `لإنشاء زر GUI:
-
-1. أضف ScreenGui داخل StarterGui.
-2. أضف TextButton.
-3. أضف LocalScript داخل الزر.
-4. استخدم MouseButton1Click.
-
-مثال:
-
-local button = script.Parent
-
-button.MouseButton1Click:Connect(function()
-    print("تم الضغط على الزر")
-end)`
-    },
-    {
-        keys: ["ماب", "خريطة", "map", "لعبة", "game"],
-        response: `فكرة تطوير ماب:
-
-🎮 ابدأ بفكرة أساسية واضحة.
-🗺️ قسم الماب إلى مناطق.
-🎯 أضف هدفاً للاعب.
-💰 أضف نظام مكافآت.
-🔓 أضف تقدم وفتح مناطق.
-👥 اختبر الماب مع لاعبين.
-
-إذا تبي، أقدر أجهز لك مخطط ماب كامل مع الأنظمة والمهام.`
-    },
-    {
-        keys: ["تسريع", "تايم", "وقت", "timer"],
-        response: `لإنشاء نظام مؤقت:
-
-local timeLeft = 60
-
-while timeLeft > 0 do
-    print("الوقت:", timeLeft)
-    task.wait(1)
-    timeLeft -= 1
-end
-
-print("انتهى الوقت!")
-
-تقدر تربطه بواجهة TextLabel لتعرض الوقت للاعب.`
-    }
-];
-
-function getChatResponse(message) {
-    const text = message.toLowerCase();
-
-    for (const item of ChatKnowledge) {
-        if (item.keys.some(key => text.includes(key))) {
-            return item.response;
-        }
-    }
-
-    if (text.includes("مرحبا") || text.includes("السلام") || text.includes("هلا")) {
-        return "ياهلا فيك 👋 أنا مساعد GAMEDEV AI. أقدر أساعدك في سكربتات Roblox، أفكار المابات، واجهات GUI، حل الأخطاء، وأنظمة الألعاب. اكتب لي وش تبي تسوي!";
-    }
-
-    if (text.includes("سكربت") || text.includes("script")) {
-        return "أقدر أساعدك تكتب سكربت Roblox بلغة Lua. اكتب لي وش وظيفة السكربت، وين تبي تحطه، وهل تبيه ServerScript أو LocalScript، وبجهزه لك مع طريقة تركيبه.";
-    }
-
-    if (text.includes("فكرة")) {
-        return "عندي أفكار كثيرة! أقدر أطلع لك فكرة ماب كاملة مع الاسم، نظام اللعب، المناطق، المهام، التطوير، والمكافآت. حدد نوع لعبتك أو اكتب (فكرة عشوائية).";
-    }
-
-    return `وصلني طلبك:
-
-"${message}"
-
-أقدر أساعدك في:
-• برمجة Roblox بلغة Lua
-• تصميم أنظمة اللعب
-• أفكار المابات
-• واجهات GUI
-• حل الأخطاء
-• تنظيم ملفات المشروع
-
-حدد لي تفاصيل أكثر عن المطلوب حتى أجهز لك حل مناسب.
-
-ملاحظة: المساعد الحالي يعمل بمحرك ردود محلي، وليس متصلاً بنموذج ذكاء اصطناعي خارجي.`;
-}
-
-/* ============================================================
-   CHAT UI
-============================================================ */
-
-function addChatMessage(role, message) {
-    const container = $("chatMessages");
-    if (!container) return;
-
-    const wrapper = document.createElement("div");
-    wrapper.className = `chat-message ${role}`;
-
-    const avatar = document.createElement("div");
-    avatar.className = "chat-avatar";
-    avatar.textContent = role === "user" ? "👤" : "🤖";
-
-    const bubble = document.createElement("div");
-    bubble.className = "chat-bubble";
-
-    const content = document.createElement("div");
-    content.className = "chat-content";
-    content.textContent = message;
-
-    bubble.appendChild(content);
-
-    if (role === "assistant") {
-        const copy = document.createElement("button");
-        copy.className = "message-copy";
-        copy.textContent = "نسخ الرد";
-        copy.addEventListener("click", () => copyText(message));
-        bubble.appendChild(copy);
-    }
-
-    wrapper.appendChild(avatar);
-    wrapper.appendChild(bubble);
-    container.appendChild(wrapper);
-
-    container.scrollTop = container.scrollHeight;
-}
-
-async function sendChatMessage(message) {
-    const text = String(message || "").trim();
-
-    if (!text || App.busy) return;
-
-    App.busy = true;
-
-    const input = $("chatInput");
-    if (input) input.value = "";
-
-    addChatMessage("user", text);
-
-    App.chat.push({
-        role: "user",
-        text,
-        time: Date.now()
-    });
-
-    writeStorage(GD.storage.chat, App.chat);
-
-    const typing = document.createElement("div");
-    typing.className = "chat-typing";
-    typing.id = "chatTyping";
-    typing.textContent = "GAMEDEV AI يفكر...";
-    $("chatMessages")?.appendChild(typing);
-
-    await delay(650);
-
-    typing.remove();
-
-    const response = getChatResponse(text);
-
-    addChatMessage("assistant", response);
-
-    App.chat.push({
-        role: "assistant",
-        text: response,
-        time: Date.now()
-    });
-
-    writeStorage(GD.storage.chat, App.chat);
-
-    App.busy = false;
-}
-
-function initializeChat() {
-    $("chatForm")?.addEventListener("submit", event => {
-        event.preventDefault();
-        sendChatMessage($("chatInput")?.value);
-    });
-
-    $("sendChat")?.addEventListener("click", () => {
-        sendChatMessage($("chatInput")?.value);
-    });
-
-    document.querySelectorAll("[data-prompt]").forEach(button => {
-        button.addEventListener("click", () => {
-            usePrompt(button.dataset.prompt);
-        });
-    });
-
-    const input = $("chatInput");
-
-    input?.addEventListener("keydown", event => {
-        if (event.key === "Enter" && !event.shiftKey) {
-            event.preventDefault();
-            sendChatMessage(input.value);
-        }
-    });
-}
-
-function usePrompt(prompt) {
-    if (!prompt) return;
-
-    navigate("chat");
-
-    const input = $("chatInput");
-    if (input) input.value = prompt;
-
-    setTimeout(() => input?.focus(), 150);
-}
-
-function clearChat() {
-    App.chat = [];
-    writeStorage(GD.storage.chat, App.chat);
-
-    const messages = $("chatMessages");
-    if (messages) messages.innerHTML = "";
-
-    toast("تم مسح المحادثة");
-}
-
-/* ============================================================
-   SCRIPT GENERATOR
-============================================================ */
-
-const ScriptTemplates = {
-    speed: `--[ GAMEDEV AI | SPEED SYSTEM ]--
-
-local Players = game:GetService("Players")
-
-local DEFAULT_SPEED = 16
-local BOOST_SPEED = 32
-
-Players.PlayerAdded:Connect(function(player)
-    player.CharacterAdded:Connect(function(character)
-        local humanoid = character:WaitForChild("Humanoid")
-        humanoid.WalkSpeed = DEFAULT_SPEED
-    end)
-end)
-
--- ضع منطق تفعيل السرعة الإضافية هنا
-`,
-
-    money: `--[ GAMEDEV AI | MONEY SYSTEM ]--
-
-local Players = game:GetService("Players")
-
-Players.PlayerAdded:Connect(function(player)
-    local leaderstats = Instance.new("Folder")
-    leaderstats.Name = "leaderstats"
-    leaderstats.Parent = player
-
-    local money = Instance.new("IntValue")
-    money.Name = "Money"
-    money.Value = 0
-    money.Parent = leaderstats
-end)
-
--- أضف أنظمة المكافآت في السيرفر
-`,
-
-    leaderstats: `--[ GAMEDEV AI | LEADERSTATS ]--
-
-local Players = game:GetService("Players")
-
-Players.PlayerAdded:Connect(function(player)
-    local leaderstats = Instance.new("Folder")
-    leaderstats.Name = "leaderstats"
-    leaderstats.Parent = player
-
-    local wins = Instance.new("IntValue")
-    wins.Name = "Wins"
-    wins.Value = 0
-    wins.Parent = leaderstats
-
-    local level = Instance.new("IntValue")
-    level.Name = "Level"
-    level.Value = 1
-    level.Parent = leaderstats
-end)
-`,
-
-    door: `--[ GAMEDEV AI | INTERACTIVE DOOR ]--
-
-local door = script.Parent
-local prompt = door:WaitForChild("ProximityPrompt")
-
-local opened = false
-
-prompt.Triggered:Connect(function(player)
-    if opened then return end
-
-    opened = true
-    door.Transparency = 0.7
-    door.CanCollide = false
-
-    task.wait(3)
-
-    door.Transparency = 0
-    door.CanCollide = true
-    opened = false
-end)
-`,
-
-    kill: `--[ GAMEDEV AI | KILL PART ]--
-
-local part = script.Parent
-
-part.Touched:Connect(function(hit)
-    local character = hit.Parent
-    local humanoid = character and character:FindFirstChildOfClass("Humanoid")
-
-    if humanoid then
-        humanoid.Health = 0
-    end
-end)
-`,
-
-    checkpoint: `--[ GAMEDEV AI | CHECKPOINT ]--
-
-local checkpoint = script.Parent
-
-checkpoint.Touched:Connect(function(hit)
-    local character = hit.Parent
-    local player = game.Players:GetPlayerFromCharacter(character)
-
-    if not player then return end
-
-    player:SetAttribute("Checkpoint", checkpoint.Position)
-end)
-`,
-
-    tool: `--[ GAMEDEV AI | TOOL ]--
-
-local tool = script.Parent
-
-tool.Activated:Connect(function()
-    print("Tool activated:", tool.Name)
-end)
-`,
-
-    teleport: `--[ GAMEDEV AI | TELEPORT PART ]--
-
-local Players = game:GetService("Players")
-local destination = workspace:WaitForChild("Destination")
-local part = script.Parent
-
-part.Touched:Connect(function(hit)
-    local character = hit.Parent
-    local player = Players:GetPlayerFromCharacter(character)
-
-    if not player then return end
-
-    local root = character:FindFirstChild("HumanoidRootPart")
-
-    if root then
-        root.CFrame = destination.CFrame + Vector3.new(0, 4, 0)
-    end
-end)
-`,
-
-    rebirth: `--[ GAMEDEV AI | REBIRTH SYSTEM ]--
-
-local Players = game:GetService("Players")
-
-Players.PlayerAdded:Connect(function(player)
-    local stats = player:WaitForChild("leaderstats")
-    local power = stats:WaitForChild("Power")
-
-    local rebirths = Instance.new("IntValue")
-    rebirths.Name = "Rebirths"
-    rebirths.Value = 0
-    rebirths.Parent = stats
-end)
-
--- تحقق من متطلبات Rebirth في السيرفر
--- لا تسمح للعميل بتحديد المكافآت
-`,
-
-    datastore: `--[ GAMEDEV AI | DATASTORE ]--
+    local Coins = Instance.new("IntValue")
+    Coins.Name = "Coins"
+    Coins.Value = 0
+    Coins.Parent = leaderstats
+
+    local Wins = Instance.new("IntValue")
+    Wins.Name = "Wins"
+    Wins.Value = 0
+    Wins.Parent = leaderstats
+
+end)`,
+
+datastore: `-- DataStore System
+-- ضع هذا السكربت داخل ServerScriptService
+-- فعّل Enable Studio Access to API Services
+-- من Game Settings > Security
 
 local DataStoreService = game:GetService("DataStoreService")
 local Players = game:GetService("Players")
 
-local store = DataStoreService:GetDataStore("PlayerData_V1")
-
-local function savePlayer(player)
-    local data = {
-        Coins = player:GetAttribute("Coins") or 0
-    }
-
-    local success, err = pcall(function()
-        store:SetAsync("Player_" .. player.UserId, data)
-    end)
-
-    if not success then
-        warn("Save error:", err)
-    end
-end
-
-local function loadPlayer(player)
-    local success, data = pcall(function()
-        return store:GetAsync("Player_" .. player.UserId)
-    end)
-
-    if success and data then
-        player:SetAttribute("Coins", data.Coins or 0)
-    else
-        player:SetAttribute("Coins", 0)
-    end
-end
-
-Players.PlayerAdded:Connect(loadPlayer)
-Players.PlayerRemoving:Connect(savePlayer)
-
-game:BindToClose(function()
-    for _, player in ipairs(Players:GetPlayers()) do
-        savePlayer(player)
-    end
-end)
-`,
-
-    round: `--[ GAMEDEV AI | ROUND SYSTEM BASE ]--
-
-local Players = game:GetService("Players")
-
-local MIN_PLAYERS = 2
-local INTERMISSION = 15
-local ROUND_TIME = 120
-
-while true do
-    while #Players:GetPlayers() < MIN_PLAYERS do
-        task.wait(2)
-    end
-
-    for timer = INTERMISSION, 1, -1 do
-        print("Starting in:", timer)
-        task.wait(1)
-    end
-
-    print("ROUND START")
-
-    for timer = ROUND_TIME, 1, -1 do
-        if #Players:GetPlayers() < MIN_PLAYERS then
-            break
-        end
-
-        print("Time remaining:", timer)
-        task.wait(1)
-    end
-
-    print("ROUND END")
-    task.wait(5)
-end
-`,
-
-    ui: `--[ GAMEDEV AI | GUI BUTTON ]--
-
-local button = script.Parent
-
-button.Activated:Connect(function()
-    print("Button pressed!")
-end)
-`,
-
-    npc: `--[ GAMEDEV AI | NPC MOVEMENT BASE ]--
-
-local npc = script.Parent
-local humanoid = npc:WaitForChild("Humanoid")
-
-local points = workspace:WaitForChild("NPCPoints"):GetChildren()
-
-while #points > 0 do
-    local point = points[math.random(1, #points)]
-
-    humanoid:MoveTo(point.Position)
-    humanoid.MoveToFinished:Wait()
-
-    task.wait(1)
-end
-`,
-
-    pet: `--[ GAMEDEV AI | PET FOLLOW BASE ]--
-
-local Players = game:GetService("Players")
-local pet = script.Parent
-
-local function followPlayer(player)
-    local character = player.Character
-    if not character then return end
-
-    local root = character:FindFirstChild("HumanoidRootPart")
-    local petRoot = pet.PrimaryPart
-
-    if root and petRoot then
-        petRoot.CFrame = root.CFrame * CFrame.new(3, 0, 3)
-    end
-end
-
-Players.PlayerAdded:Connect(function(player)
-    player.CharacterAdded:Connect(function()
-        task.wait(2)
-        followPlayer(player)
-    end)
-end)
-`,
-
-    shop: `--[ GAMEDEV AI | SHOP SYSTEM BASE ]--
-
-local Players = game:GetService("Players")
-
-local function purchase(player, itemName, price)
-    local stats = player:FindFirstChild("leaderstats")
-    local coins = stats and stats:FindFirstChild("Coins")
-
-    if not coins then return false end
-    if coins.Value < price then return false end
-
-    coins.Value -= price
-
-    print(player.Name, "purchased", itemName)
-
-    return true
-end
-
--- نفّذ عمليات الشراء من السيرفر
--- أضف التحقق من RemoteEvent عند ربط GUI
-`,
-
-    generic: `--[ GAMEDEV AI | NEW SCRIPT ]--
-
-local Players = game:GetService("Players")
-
--- اكتب وظيفة السكربت هنا
-
-print("GAMEDEV AI script initialized")
-
--- TODO: Add your game logic
-`
-};
-
-function detectScriptType(text) {
-    const value = (text || "").toLowerCase();
-
-    if (/سرع|speed/.test(value)) return "speed";
-    if (/فلوس|مال|money|cash|coin/.test(value)) return "money";
-    if (/leaderstat|leaderstats|احصائ/.test(value)) return "leaderstats";
-    if (/باب|door/.test(value)) return "door";
-    if (/قتل|kill|موت|ضرر/.test(value)) return "kill";
-    if (/checkpoint|نقطة حفظ|نقطه حفظ/.test(value)) return "checkpoint";
-    if (/tool|اداة|أداة/.test(value)) return "tool";
-    if (/teleport|انتقال|نقل لاعب/.test(value)) return "teleport";
-    if (/rebirth|ريبرث|إعادة الولادة/.test(value)) return "rebirth";
-    if (/data|حفظ|داتا/.test(value)) return "datastore";
-    if (/round|جولة|راوند/.test(value)) return "round";
-    if (/gui|واجهة|زر/.test(value)) return "ui";
-    if (/npc|شخصية|بوت/.test(value)) return "npc";
-    if (/pet|حيوان|مرافق/.test(value)) return "pet";
-    if (/shop|متجر|شراء/.test(value)) return "shop";
-
-    return "generic";
-}
-
-function generateScript() {
-    const category = $("scriptCategory")?.value || "generic";
-    const details = $("scriptDetails")?.value || "";
-
-    const type = category === "custom"
-        ? detectScriptType(details)
-        : category;
-
-    const code = ScriptTemplates[type] || ScriptTemplates.generic;
-
-    const output = $("codeEditor");
-    if (output) output.value = code;
-
-    updateLineNumbers();
-    updateEditorStatus();
-    toast("تم إنشاء السكربت");
-}
-
-function updateLineNumbers() {
-    const editor = $("codeEditor");
-    const lineNumbers = $("lineNumbers");
-
-    if (!editor || !lineNumbers) return;
-
-    const count = Math.max(1, editor.value.split("\n").length);
-
-    lineNumbers.innerHTML = Array.from(
-        { length: count },
-        (_, i) => `<div>${i + 1}</div>`
-    ).join("");
-
-    lineNumbers.scrollTop = editor.scrollTop;
-}
-
-function updateEditorStatus() {
-    const editor = $("codeEditor");
-    const status = $("editorStatus");
-
-    if (!editor || !status) return;
-
-    status.textContent = `${editor.value.split("\n").length} Lines • Lua`;
-}
-
-function copyCode() {
-    copyText($("codeEditor")?.value || "");
-}
-
-function downloadCode() {
-    const code = $("codeEditor")?.value || "";
-
-    if (!code.trim()) {
-        toast("أنشئ سكربت أولاً", "error");
-        return;
-    }
-
-    const blob = new Blob([code], {
-        type: "text/plain;charset=utf-8"
-    });
-
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-
-    link.href = url;
-    link.download = "GAMEDEV_AI_Script.lua";
-    link.click();
-
-    URL.revokeObjectURL(url);
-    toast("تم تحميل ملف Lua");
-}
-
-/* ============================================================
-   IDE EDITOR
-============================================================ */
-
-function initializeEditor() {
-    const editor = $("codeEditor");
-
-    if (!editor) return;
-
-    editor.addEventListener("input", () => {
-        updateLineNumbers();
-        updateEditorStatus();
-    });
-
-    editor.addEventListener("scroll", updateLineNumbers);
-
-    updateLineNumbers();
-    updateEditorStatus();
-}
-
-/* ============================================================
-   IDEA GENERATOR
-============================================================ */
-
-const Ideas = {
-    simulator: [
-        "محاكي بناء مدينة يبدأ اللاعب فيه من قطعة أرض صغيرة ويطورها إلى مدينة ضخمة.",
-        "محاكي جمع الطاقة: كل منطقة تحتوي مصادر طاقة نادرة وتطويرات مختلفة.",
-        "محاكي صناعة السيارات: اجمع القطع واصنع مركباتك ثم اختبرها.",
-        "محاكي مطعم: ابدأ بعربة طعام وطورها إلى سلسلة مطاعم."
-    ],
-
-    survival: [
-        "جزيرة تتغير كل ليلة وتظهر فيها تحديات وموارد جديدة.",
-        "عاصفة رملية تقترب كل عدة دقائق ويجب تجهيز الملجأ.",
-        "لاعبون عالقون في محطة مهجورة ويحتاجون جمع أجزاء للهروب.",
-        "مدينة غارقة ترتفع مياهها تدريجياً ويجب الانتقال إلى مناطق أعلى."
-    ],
-
-    tycoon: [
-        "Tycoon بناء محطة فضاء مع أقسام إنتاج وطاقم.",
-        "Tycoon إدارة مدينة ألعاب وتطوير الألعاب والمرافق.",
-        "Tycoon إدارة شركة سيارات تبدأ بورشة صغيرة.",
-        "Tycoon بناء سوق عربي ضخم مع محلات قابلة للتطوير."
-    ],
-
-    horror: [
-        "فندق مهجور يحتوي طوابق تتغير كل مرة يدخل اللاعب.",
-        "مدرسة قديمة تختفي فيها الفصول بعد منتصف الليل.",
-        "قرية ضبابية يجب اكتشاف أسرارها قبل طلوع الشمس.",
-        "مستشفى مهجور يعمل فيه مصعد ينقلك إلى أماكن غريبة."
-    ],
-
-    obby: [
-        "Obby فوق مدينة مستقبلية مع مسارات تختفي.",
-        "Obby داخل مصنع ضخم يتغير اتجاه الآلات.",
-        "Obby مراحل بألوان، ولكل لون قدرة مختلفة.",
-        "Obby داخل عالم عملاق من الأدوات اليومية."
-    ],
-
-    roleplay: [
-        "مدينة خليجية فيها وظائف وتجارة ومنازل وتطوير وظيفي.",
-        "قرية شعبية فيها سوق ومزارع وورش وأسرار.",
-        "مدينة إعلامية فيها مذيعون ومصورون وصحف ومهام.",
-        "مدينة سياحية فيها مطار وفنادق ومناطق فعاليات."
-    ],
-
-    battleground: [
-        "ساحة معارك تتغير تضاريسها خلال القتال.",
-        "معركة فرق مع قدرات يتم اكتسابها من المناطق.",
-        "قتال في مدينة يمكن فتح الطرق وإغلاقها.",
-        "Arena تحتوي أحداثاً عشوائية وتحديات كل دقيقة."
-    ],
-
-    custom: [
-        "عالم مفتوح مع مهام سرية وأماكن مخفية.",
-        "لعبة تطوير شخصية مع نظام سمعة ومهارات.",
-        "لعبة سباق مناطق متعددة مع تحديات جماعية.",
-        "لعبة استكشاف فيها آثار وألغاز وأدوات."
-    ]
-};
-
-function generateIdea() {
-    const category = $("ideaCategory")?.value || "custom";
-    const details = $("ideaDetails")?.value || "";
-
-    const pool = Ideas[category] || Ideas.custom;
-    const idea = pool[Math.floor(Math.random() * pool.length)];
-
-    const title = idea.split(":")[0].slice(0, 70);
-
-    const fullIdea = `
-🎮 الفكرة:
-${idea}
-
-🗺️ تصميم الماب:
-• منطقة بداية واضحة.
-• مناطق تطوير تدريجية.
-• مكان خاص للمكافآت.
-• أماكن سرية للاستكشاف.
-
-🎯 نظام اللعب:
-• مهام قصيرة ومتنوعة.
-• مكافآت على الإنجاز.
-• تطوير مستمر.
-• أهداف يومية.
-
-⭐ إضافات مميزة:
-• أحداث عشوائية.
-• تحديات أسبوعية.
-• عناصر نادرة.
-• لوحة ترتيب اللاعبين.
-
-🧩 تفاصيل طلبك:
-${details || "لم يتم تحديد تفاصيل إضافية."}
-
-🚀 اقتراح التطوير:
-ابدأ بنموذج صغير قابل للعب، ثم أضف المناطق والأنظمة تدريجياً.
-`;
-
-    const result = $("ideaResult");
-
-    if (result) {
-        result.innerHTML = `
-            <h3>${safeHTML(title)}</h3>
-            <pre>${safeHTML(fullIdea)}</pre>
-        `;
-    }
-
-    toast("تم توليد فكرة جديدة");
-}
-
-/* ============================================================
-   GUI PLANNER
-============================================================ */
-
-const GUIPlans = {
-    shop: [
-        "واجهة متجر متكاملة",
-        "Header: اسم المتجر + رصيد اللاعب.",
-        "Categories: أدوات، قدرات، عناصر، ترقيات.",
-        "Item Card: صورة العنصر + الاسم + السعر + زر شراء.",
-        "Footer: زر إغلاق + تنبيه عند عدم كفاية الرصيد."
-    ],
-
-    inventory: [
-        "واجهة Inventory",
-        "Header: عنوان المخزون + عدد العناصر.",
-        "Grid: مربعات العناصر.",
-        "Details: وصف العنصر المحدد.",
-        "Actions: Equip / Unequip / Drop.",
-        "Footer: زر إغلاق."
-    ],
-
-    settings: [
-        "واجهة الإعدادات",
-        "Audio: صوت الموسيقى والمؤثرات.",
-        "Graphics: جودة العرض.",
-        "Gameplay: خيارات اللعب.",
-        "Controls: أزرار التحكم.",
-        "زر إعادة الضبط."
-    ],
-
-    leaderboard: [
-        "واجهة ترتيب اللاعبين",
-        "Header: أفضل اللاعبين.",
-        "Top 3: تصميم خاص للمراكز الثلاثة.",
-        "List: بقية اللاعبين.",
-        "Stats: Wins / Level / Coins.",
-        "زر تحديث الترتيب."
-    ],
-
-    loading: [
-        "واجهة تحميل",
-        "Logo: اسم اللعبة.",
-        "Progress Bar: نسبة التحميل.",
-        "Tips: نصائح تتغير.",
-        "Background: صورة أو عالم اللعبة.",
-        "Animation: انتقال تدريجي."
-    ],
-
-    hud: [
-        "واجهة HUD",
-        "Health Bar.",
-        "Cash / Coins.",
-        "Level / XP.",
-        "Quest Tracker.",
-        "Buttons: متجر، حقيبة، إعدادات."
-    ],
-
-    custom: [
-        "واجهة GUI مخصصة",
-        "Header: عنوان الواجهة.",
-        "Main Content: المحتوى الأساسي.",
-        "Buttons: أزرار التفاعل.",
-        "Footer: خيارات إضافية.",
-        "Animations: انتقالات ناعمة."
-    ]
-};
-
-function generateGUI() {
-    const category = $("guiCategory")?.value || "custom";
-    const details = $("guiDetails")?.value || "";
-
-    const plan = GUIPlans[category] || GUIPlans.custom;
-
-    const resultText = [
-        ...plan,
-        "",
-        "🎨 اقتراح الشكل:",
-        "• خلفية داكنة مع تدرج بنفسجي.",
-        "• زوايا مستديرة.",
-        "• حدود شفافة.",
-        "• تأثير Hover للأزرار.",
-        "• Animation عند فتح الواجهة.",
-        "",
-        "📌 تفاصيل إضافية:",
-        details || "لم يتم تحديد تفاصيل."
-    ].join("\n");
-
-    const result = $("guiResult");
-
-    if (result) {
-        result.innerHTML = `<pre>${safeHTML(resultText)}</pre>`;
-    }
-
-    toast("تم تجهيز مخطط الواجهة");
-}
-
-/* ============================================================
-   ERROR ANALYZER
-============================================================ */
-
-const ErrorKnowledge = [
-    {
-        match: ["attempt to index nil", "index nil"],
-        title: "Nil Error",
-        explanation: "تحاول استخدام عنصر أو متغير غير موجود أو قيمته nil.",
-        solutions: [
-            "تأكد من اسم العنصر.",
-            "استخدم WaitForChild عند الحاجة.",
-            "تأكد أن العنصر موجود في المكان الصحيح.",
-            "لا تستخدم العنصر قبل التأكد من وجوده."
-        ],
-        example: `local part = workspace:WaitForChild("Part")
-print(part.Name)`
-    },
-    {
-        match: ["infinite yield", "yield"],
-        title: "Infinite Yield Warning",
-        explanation: "السكربت ينتظر عنصرًا لم يظهر أو اسمه غير صحيح.",
-        solutions: [
-            "تأكد من اسم العنصر.",
-            "تأكد من مكانه داخل Explorer.",
-            "راجع مسار العنصر.",
-            "تأكد أن العنصر يتم إنشاؤه."
-        ],
-        example: `local object = workspace:WaitForChild("Part", 10)
-
-if not object then
-    warn("Part not found")
-end`
-    },
-    {
-        match: ["syntax error", "expected", "unexpected symbol"],
-        title: "Syntax Error",
-        explanation: "يوجد خطأ في كتابة Lua أو ترتيب الأقواس أو الكلمات.",
-        solutions: [
-            "راجع الأقواس () و {}.",
-            "راجع علامات الاقتباس.",
-            "تأكد من كتابة end.",
-            "راجع الفواصل وعلامات العمليات."
-        ],
-        example: `if true then
-    print("Hello")
-end`
-    },
-    {
-        match: ["attempt to call", "not a function"],
-        title: "Function Error",
-        explanation: "تحاول تشغيل شيء ليس دالة، أو اسم الدالة غير صحيح.",
-        solutions: [
-            "تأكد أن الاسم صحيح.",
-            "راجع طريقة استدعاء الدالة.",
-            "تأكد أنك لم تستخدم متغيرًا مكان الدالة."
-        ],
-        example: `local function hello()
-    print("Hello")
-end
-
-hello()`
-    },
-    {
-        match: ["remoteevent", "remote event", "remote function"],
-        title: "Remote Error",
-        explanation: "قد يكون RemoteEvent أو RemoteFunction غير موجود أو استخدامه غير صحيح.",
-        solutions: [
-            "تأكد من مكان RemoteEvent.",
-            "استخدم FireServer من LocalScript.",
-            "استخدم OnServerEvent من Script.",
-            "لا تستخدم FireServer من السيرفر."
-        },
-        example: `-- LocalScript
-RemoteEvent:FireServer()
-
--- Server Script
-RemoteEvent.OnServerEvent:Connect(function(player)
-    print(player.Name)
-end)`
-    },
-    {
-        match: ["datastore", "data store", "save", "429"],
-        title: "DataStore Error",
-        explanation: "مشكلة في حفظ البيانات أو الوصول إلى DataStore.",
-        solutions: [
-            "فعّل Enable Studio Access to API Services.",
-            "تأكد أن اللعبة منشورة.",
-            "استخدم pcall.",
-            "لا تكرر طلبات الحفظ بشكل مفرط.",
-            "راجع حدود DataStore."
-        ],
-        example: `local success, result = pcall(function()
-    return Store:GetAsync(key)
-end)
-
-if not success then
-    warn(result)
-end`
-    },
-    {
-        match: ["permission", "not authorized", "403"],
-        title: "Permission Error",
-        explanation: "لا توجد صلاحيات للوصول إلى العنصر أو الخدمة.",
-        solutions: [
-            "تأكد من صلاحيات اللعبة.",
-            "راجع إعدادات API.",
-            "تأكد من أن السكربت يعمل في المكان المناسب.",
-            "راجع إعدادات المجموعة."
-        ],
-        example: `-- تأكد من تنفيذ عمليات السيرفر
--- داخل Script في ServerScriptService`
-    },
-    {
-        match: ["timeout", "timed out"],
-        title: "Timeout",
-        explanation: "العملية لم تنته خلال الوقت المحدد.",
-        solutions: [
-            "راجع الحلقات الطويلة.",
-            "تأكد أن الدالة لا تنتظر بلا نهاية.",
-            "راجع الاتصالات والأحداث.",
-            "قلل العمليات المتكررة."
-        ],
-        example: `task.wait(1)
-print("Finished")`
-    }
-];
-
-function analyzeError() {
-    const input = $("errorInput")?.value?.trim();
-
-    if (!input) {
-        toast("اكتب الخطأ أولاً", "error");
-        return;
-    }
-
-    const lowered = input.toLowerCase();
-
-    const found = ErrorKnowledge.find(item =>
-        item.match.some(key => lowered.includes(key))
-    );
-
-    let output;
-
-    if (found) {
-        output = `
-🔍 ${found.title}
-
-📖 شرح الخطأ:
-${found.explanation}
-
-🛠️ الحلول المقترحة:
-${found.solutions.map((s, i) => `${i + 1}. ${s}`).join("\n")}
-
-💻 مثال:
-${found.example}
-
-⚠️ هذا تحليل مبدئي. راجع مكان الخطأ في Output وتأكد من سياق السكربت.
-`;
-    } else {
-        output = `
-🔍 تحليل الخطأ:
-
-لم أجد تطابقاً دقيقاً مع قاعدة الأخطاء المحلية.
-
-جرب التالي:
-1. اقرأ أول سطر أحمر في Output.
-2. راجع رقم السطر المشار إليه.
-3. تأكد من أسماء العناصر.
-4. تحقق من مكان السكربت.
-5. راجع الأقواس والكلمات المحجوزة.
-6. تأكد من نوع السكربت Script أو LocalScript.
-
-📌 أرسل رسالة الخطأ كاملة مع السكربت للحصول على تشخيص أدق.
-`;
-    }
-
-    const result = $("errorResult");
-
-    if (result) {
-        result.innerHTML = `<pre>${safeHTML(output)}</pre>`;
-    }
-
-    toast("اكتمل تحليل الخطأ");
-}
-
-/* ============================================================
-   PROJECT MANAGER
-============================================================ */
-
-function createProject() {
-    const name = $("projectName")?.value?.trim();
-    const description = $("projectDescription")?.value?.trim();
-
-    if (!name) {
-        toast("اكتب اسم المشروع", "error");
-        $("projectName")?.focus();
-        return;
-    }
-
-    const project = {
-        id: randomID(),
-        name,
-        description: description || "مشروع Roblox جديد",
-        date: Date.now(),
-        type: "Roblox"
-    };
-
-    App.projects.unshift(project);
-
-    writeStorage(GD.storage.projects, App.projects);
-
-    if ($("projectName")) $("projectName").value = "";
-    if ($("projectDescription")) $("projectDescription").value = "";
-
-    renderProjects();
-    toast("تم إنشاء المشروع بنجاح 🚀");
-}
-
-function deleteProject(id) {
-    App.projects = App.projects.filter(project => project.id !== id);
-
-    writeStorage(GD.storage.projects, App.projects);
-
-    renderProjects();
-    toast("تم حذف المشروع");
-}
-
-function renderProjects() {
-    const container = $("projectsList");
-    const homeContainer = $("recentProjects");
-
-    const count = $("projectCount");
-    if (count) count.textContent = App.projects.length;
-
-    if (container) {
-        if (!App.projects.length) {
-            container.innerHTML = `
-                <div class="empty-state">
-                    <div>📁</div>
-                    <h3>لا توجد مشاريع بعد</h3>
-                    <p>ابدأ بإنشاء أول مشروع لك</p>
-                </div>
-            `;
-        } else {
-            container.innerHTML = App.projects.map(project => `
-                <article class="project-card">
-                    <div class="project-icon">🎮</div>
-                    <div class="project-info">
-                        <h3>${safeHTML(project.name)}</h3>
-                        <p>${safeHTML(project.description)}</p>
-                        <small>${formatDate(new Date(project.date))}</small>
-                    </div>
-                    <button class="project-delete" data-delete-project="${safeHTML(project.id)}">🗑️</button>
-                </article>
-            `).join("");
-        }
-    }
-
-    if (homeContainer) {
-        homeContainer.innerHTML = App.projects.slice(0, 3).map(project => `
-            <div class="recent-project">
-                <strong>${safeHTML(project.name)}</strong>
-                <span>${safeHTML(project.description)}</span>
-            </div>
-        `).join("") || `<div class="empty-state">ابدأ مشروعك الأول!</div>`;
-    }
-
-    document.querySelectorAll("[data-delete-project]").forEach(button => {
-        button.addEventListener("click", () => {
-            deleteProject(button.dataset.deleteProject);
-        });
-    });
-}
-
-function initializeProjects() {
-    $("createProjectBtn")?.addEventListener("click", createProject);
-    renderProjects();
-}
-
-/* ============================================================
-   SCRIPT LIBRARY
-============================================================ */
-
-function initializeLibrary() {
-    document.querySelectorAll("[data-library-script]").forEach(button => {
-        button.addEventListener("click", () => {
-            const type = button.dataset.libraryScript;
-
-            navigate("scripts");
-
-            if ($("scriptCategory")) {
-                $("scriptCategory").value = type;
-            }
-
-            generateScript();
-        });
-    });
-}
-
-/* ============================================================
-   CLIPBOARD
-============================================================ */
-
-async function copyText(text) {
-    if (!text) {
-        toast("لا يوجد شيء لنسخه", "error");
-        return;
-    }
-
-    try {
-        await navigator.clipboard.writeText(text);
-        toast("تم النسخ 📋");
-    } catch {
-        const textarea = document.createElement("textarea");
-        textarea.value = text;
-        textarea.style.position = "fixed";
-        textarea.style.opacity = "0";
-
-        document.body.appendChild(textarea);
-        textarea.select();
-
-        const success = document.execCommand("copy");
-        textarea.remove();
-
-        toast(success ? "تم النسخ 📋" : "تعذر النسخ", success ? "success" : "error");
-    }
-}
-
-/* ============================================================
-   RESET
-============================================================ */
-
-function resetAllData() {
-    const confirmReset = window.confirm(
-        "هل أنت متأكد؟ سيتم حذف المشاريع والمحادثات المحفوظة على هذا الجهاز."
-    );
-
-    if (!confirmReset) return;
-
-    localStorage.removeItem(GD.storage.projects);
-    localStorage.removeItem(GD.storage.chat);
-
-    App.projects = [];
-    App.chat = [];
-
-    renderProjects();
-
-    const messages = $("chatMessages");
-    if (messages) messages.innerHTML = "";
-
-    toast("تمت إعادة ضبط البيانات");
-}
-
-/* ============================================================
-   SETTINGS
-============================================================ */
-
-function initializeSettings() {
-    $("resetData")?.addEventListener("click", resetAllData);
-    $("clearChat")?.addEventListener("click", clearChat);
-}
-
-/* ============================================================
-   KEYBOARD SHORTCUTS
-============================================================ */
-
-function initializeKeyboard() {
-    document.addEventListener("keydown", event => {
-        if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
-            event.preventDefault();
-            navigate("chat");
-            $("chatInput")?.focus();
-        }
-
-        if (event.key === "Escape") {
-            closeSidebar();
-        }
-    });
-}
-
-/* ============================================================
-   INITIALIZATION
-============================================================ */
-
-function initializeApp() {
-    initializeLoading();
-    initializeNavigation();
-    initializeSidebar();
-    initializeTheme();
-    initializeChat();
-    initializeEditor();
-    initializeProjects();
-    initializeLibrary();
-    initializeSettings();
-    initializeKeyboard();
-
-    updateLineNumbers();
-    updateEditorStatus();
-    renderProjects();
-
-    console.log(
-        `%c GAMEDEV AI ${GD.version} %c Ready 🚀`,
-        "background:#7c3aed;color:white;padding:5px;border-radius:5px;",
-        "color:#22d3ee;font-weight:bold;"
-    );
-}
-
-document.addEventListener("DOMContentLoaded", initializeApp);
-
-/* ============================================================
-   GLOBAL FUNCTIONS
-   Used by HTML buttons.
-============================================================ */
-
-window.navigate = navigate;
-window.openTool = openTool;
-window.usePrompt = usePrompt;
-window.generateScript = generateScript;
-window.copyCode = copyCode;
-window.downloadCode = downloadCode;
-window.generateIdea = generateIdea;
-window.generateGUI = generateGUI;
-window.analyzeError = analyzeError;
-window.createProject = createProject;
-window.deleteProject = deleteProject;
-window.toggleTheme = toggleTheme;
-window.copyText = copyText;
-window.clearChat = clearChat;
-window.resetAllData = resetAllData;
-window.sendChatMessage = sendChatMessage;
-/* =========================================
-   GAMEDEV AI — HTML COMPATIBILITY PATCH
-========================================= */
-
-document.addEventListener("DOMContentLoaded", function () {
-
-    // Mobile menu
-    document.getElementById("mobileMenu")
-        ?.addEventListener("click", openSidebar);
-
-    // Settings theme button
-    document.getElementById("settingsThemeToggle")
-        ?.addEventListener("click", toggleTheme);
-
-    // Project counter
-    const projectCount = document.getElementById("projectCount");
-
-    if (projectCount) {
-        projectCount.textContent = App.projects.length;
-    }
-
-    // Chat message counter
-    const messageCount = document.getElementById("messageCount");
-
-    if (messageCount) {
-        messageCount.textContent = App.chat.length;
-    }
-
-});
-
-// Match HTML project button
-window.addProject = createProject;
-
-// Match HTML notification element
-toast = function (message, type = "success") {
-    const box = document.getElementById("toast");
-    const text = document.getElementById("toastMessage");
-
-    if (!box || !text) {
-        console.log(message);
-        return;
-    }
-
-    text.textContent = message;
-    box.classList.add("show");
-
-    clearTimeout(window.GDToastTimer);
-
-    window.GDToastTimer = setTimeout(() => {
-        box.classList.remove("show");
-    }, 2600);
-};
-
-// Match script categories with generator
-const originalGenerateScript = generateScript;
-
-generateScript = function () {
-    const select = document.getElementById("scriptCategory");
-    if (!select) return;
-
-    const originalValue = select.value;
-
-    const categories = {
-        gui: "ui",
-        rounds: "round",
-        levels: "generic",
-        admin: "generic"
-    };
-
-    select.value = categories[originalValue] || originalValue;
-
-    originalGenerateScript();
-
-    select.value = originalValue;
-};
-
-// Match GUI categories
-generateGUI = function () {
-    const select = document.getElementById("guiCategory");
-
-    if (!select) return;
-
-    const originalValue = select.value;
-
-    const categories = {
-        "Main Menu": "custom",
-        "Shop": "shop",
-        "Inventory": "inventory",
-        "Stats": "hud",
-        "Settings": "settings",
-        "Admin Panel": "custom",
-        "Loading Screen": "loading"
-    };
-
-    select.value = categories[originalValue] || "custom";
-
-    const originalDetails = document.getElementById("guiDetails");
-    const details = originalDetails?.value || "";
-
-    const plan = GUIPlans[select.value] || GUIPlans.custom;
-
-    const result = document.getElementById("guiResult");
-
-    if (result) {
-        result.innerHTML = `<pre>${safeHTML([
-            ...plan,
-            "",
-            "تفاصيل التصميم:",
-            details || "لا توجد تفاصيل إضافية."
-        ].join("\n"))}</pre>`;
-    }
-
-    select.value = originalValue;
-
-    toast("تم إنشاء مخطط الواجهة");
-};
-
-console.log("GAMEDEV AI Compatibility Patch Loaded");
-/* =====================================================
-   GAMEDEV AI — FINAL BUTTONS & FEATURES FIX
-   Compatibility + Button Connections
-===================================================== */
-
-(function () {
-    "use strict";
-
-    /* ---------- TOAST NOTIFICATIONS ---------- */
-
-    toast = function (message, type = "success") {
-        const box = document.getElementById("toast");
-        const text = document.getElementById("toastMessage");
-
-        if (!box || !text) {
-            console.log("[GAMEDEV AI]", message);
-            return;
-        }
-
-        text.textContent = message;
-        box.classList.add("show");
-
-        clearTimeout(window.GDToastTimer);
-
-        window.GDToastTimer = setTimeout(() => {
-            box.classList.remove("show");
-        }, 2600);
-    };
-
-
-    /* ---------- MOBILE MENU ---------- */
-
-    document.getElementById("mobileMenu")
-        ?.addEventListener("click", openSidebar);
-
-
-    /* ---------- THEME BUTTONS ---------- */
-
-    document.getElementById("settingsThemeToggle")
-        ?.addEventListener("click", toggleTheme);
-
-
-    /* ---------- PROJECT BUTTON ---------- */
-
-    window.addProject = createProject;
-
-
-    /* ---------- PROJECT DISPLAY ---------- */
-
-    const originalRenderProjects = renderProjects;
-
-    renderProjects = function () {
-        originalRenderProjects();
-
-        const home = document.getElementById("homeRecentProjects");
-
-        if (home) {
-            if (!App.projects.length) {
-                home.innerHTML = `
-                    <div class="empty-state">
-                        <div>▣</div>
-                        <strong>لا توجد مشاريع حتى الآن</strong>
-                        <p>أنشئ أول مشروع لك وابدأ رحلتك.</p>
-                        <button onclick="openTool('projects')">
-                            إنشاء مشروع جديد
-                        </button>
-                    </div>
-                `;
-            } else {
-                home.innerHTML = App.projects.slice(0, 3).map(project => `
-                    <div class="recent-project">
-                        <strong>${safeHTML(project.name)}</strong>
-                        <span>${safeHTML(project.description)}</span>
-                    </div>
-                `).join("");
-            }
-        }
-
-        const counter = document.getElementById("projectCount");
-
-        if (counter) {
-            counter.textContent = App.projects.length;
-        }
-    };
-
-
-    /* ---------- CHAT COUNTER ---------- */
-
-    function updateChatCounter() {
-        const counter = document.getElementById("messageCount");
-
-        if (counter) {
-            counter.textContent = App.chat.length;
-        }
-    }
-
-    const originalSendChat = sendChatMessage;
-
-    sendChatMessage = async function (message) {
-        await originalSendChat(message);
-        updateChatCounter();
-    };
-
-    window.sendChatMessage = sendChatMessage;
-
-    const originalClearChat = clearChat;
-
-    clearChat = function () {
-        originalClearChat();
-        updateChatCounter();
-    };
-
-    window.clearChat = clearChat;
-
-
-    /* ---------- SCRIPT GENERATOR FIX ---------- */
-
-    ScriptTemplates.levels = `-- GAMEDEV AI | LEVEL SYSTEM
-
-local Players = game:GetService("Players")
+local PlayerData = DataStoreService:GetDataStore("PlayerData_V1")
 
 Players.PlayerAdded:Connect(function(player)
 
@@ -1874,248 +282,100 @@ Players.PlayerAdded:Connect(function(player)
     leaderstats.Name = "leaderstats"
     leaderstats.Parent = player
 
-    local level = Instance.new("IntValue")
-    level.Name = "Level"
-    level.Value = 1
-    level.Parent = leaderstats
+    local Coins = Instance.new("IntValue")
+    Coins.Name = "Coins"
+    Coins.Parent = leaderstats
 
-    local xp = Instance.new("IntValue")
-    xp.Name = "XP"
-    xp.Value = 0
-    xp.Parent = player
-
-    xp.Changed:Connect(function()
-
-        local neededXP = level.Value * 100
-
-        while xp.Value >= neededXP do
-            xp.Value -= neededXP
-            level.Value += 1
-            neededXP = level.Value * 100
-        end
-
+    local success, data = pcall(function()
+        return PlayerData:GetAsync(player.UserId)
     end)
 
-end)
-`;
-
-    ScriptTemplates.admin = `-- GAMEDEV AI | BASIC ADMIN SYSTEM
-
-local Players = game:GetService("Players")
-
-local ADMINS = {
-    [123456789] = true
-}
-
-Players.PlayerAdded:Connect(function(player)
-
-    player.Chatted:Connect(function(message)
-
-        if not ADMINS[player.UserId] then
-            return
-        end
-
-        local args = string.split(message, " ")
-
-        if args[1] == "!speed" then
-
-            local speed = tonumber(args[2])
-
-            if speed and player.Character then
-                local humanoid =
-                    player.Character:FindFirstChildOfClass("Humanoid")
-
-                if humanoid then
-                    humanoid.WalkSpeed = math.clamp(speed, 0, 100)
-                end
-            end
-
-        end
-
-    end)
+    if success and type(data) == "number" then
+        Coins.Value = data
+    else
+        Coins.Value = 0
+    end
 
 end)
 
--- استبدل 123456789 بمعرف حسابك.
-`;
+Players.PlayerRemoving:Connect(function(player)
 
-    const originalGenerateScript = generateScript;
+    local stats = player:FindFirstChild("leaderstats")
+    local coins = stats and stats:FindFirstChild("Coins")
 
-    generateScript = function () {
+    if not coins then return end
 
-        const select = document.getElementById("scriptCategory");
+    local success, err = pcall(function()
+        PlayerData:SetAsync(player.UserId, coins.Value)
+    end)
 
-        if (!select) return;
+    if not success then
+        warn("DataStore Save Error:", err)
+    end
 
-        const oldValue = select.value;
+end)`,
 
-        const mapping = {
-            gui: "ui",
-            rounds: "round",
-            levels: "levels",
-            admin: "admin"
-        };
+shop: `-- Simple Shop System
+-- ضع السكربت داخل ServerScriptService
+-- أنشئ RemoteEvent باسم BuyItem داخل ReplicatedStorage
 
-        select.value = mapping[oldValue] || oldValue;
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local BuyItem = ReplicatedStorage:WaitForChild("BuyItem")
 
-        originalGenerateScript();
+local ITEM_PRICE = 100
+local ITEM_NAME = "SpeedTool"
 
-        select.value = oldValue;
-    };
+BuyItem.OnServerEvent:Connect(function(player)
 
-    window.generateScript = generateScript;
+    local stats = player:FindFirstChild("leaderstats")
+    local coins = stats and stats:FindFirstChild("Coins")
 
+    if not coins then return end
+    if coins.Value < ITEM_PRICE then return end
 
-    /* ---------- GUI GENERATOR FIX ---------- */
+    local item = game.ServerStorage:FindFirstChild(ITEM_NAME)
+    if not item then
+        warn("Item not found:", ITEM_NAME)
+        return
+    end
 
-    const originalGenerateGUI = generateGUI;
+    coins.Value -= ITEM_PRICE
 
-    generateGUI = function () {
+    local clone = item:Clone()
+    clone.Parent = player.Backpack
 
-        const select = document.getElementById("guiCategory");
+end)`,
 
-        if (!select) return;
+rebirth: `-- Rebirth System
+-- ضع السكربت داخل ServerScriptService
+-- أنشئ RemoteEvent باسم RebirthEvent داخل ReplicatedStorage
 
-        const oldValue = select.value;
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RebirthEvent = ReplicatedStorage:WaitForChild("RebirthEvent")
 
-        const mapping = {
-            "Main Menu": "custom",
-            "Shop": "shop",
-            "Inventory": "inventory",
-            "Stats": "hud",
-            "Settings": "settings",
-            "Admin Panel": "custom",
-            "Loading Screen": "loading"
-        };
+local BASE_REQUIREMENT = 1000
 
-        select.value = mapping[oldValue] || "custom";
+RebirthEvent.OnServerEvent:Connect(function(player)
 
-        originalGenerateGUI();
+    local stats = player:FindFirstChild("leaderstats")
+    if not stats then return end
 
-        select.value = oldValue;
-    };
+    local power = stats:FindFirstChild("Power")
+    local rebirths = stats:FindFirstChild("Rebirths")
 
-    window.generateGUI = generateGUI;
+    if not power or not rebirths then return end
 
+    local requirement = BASE_REQUIREMENT * (rebirths.Value + 1)
 
-    /* ---------- IDEA GENERATOR FIX ---------- */
+    if power.Value >= requirement then
+        power.Value = 0
+        rebirths.Value += 1
+    end
 
-    const originalGenerateIdea = generateIdea;
+end)`,
 
-    generateIdea = function () {
-
-        const select = document.getElementById("ideaCategory");
-
-        if (!select) return;
-
-        const oldValue = select.value;
-
-        const mapping = {
-            "عالم مفتوح": "custom",
-            "محاكاة واقعية": "simulator",
-            "رعب": "horror",
-            "مغامرات": "survival",
-            "حياة واقعية": "roleplay",
-            "تحديات": "obby",
-            "قتال": "battleground",
-            "اقتصاد": "tycoon",
-            "بقاء": "survival"
-        };
-
-        select.value = mapping[oldValue] || "custom";
-
-        originalGenerateIdea();
-
-        select.value = oldValue;
-    };
-
-    window.generateIdea = generateIdea;
-
-
-    /* ---------- NOTIFICATION BUTTON ---------- */
-
-    document.querySelector(".notification-btn")
-        ?.addEventListener("click", function () {
-            toast("لا توجد إشعارات جديدة 🔔");
-        });
-
-
-    /* ---------- INITIAL COUNTERS ---------- */
-
-    document.addEventListener("DOMContentLoaded", function () {
-
-        updateChatCounter();
-
-        const counter = document.getElementById("projectCount");
-
-        if (counter) {
-            counter.textContent = App.projects.length;
-        }
-
-        renderProjects();
-
-        console.log("GAMEDEV AI — All compatibility fixes loaded.");
-    });
-
-})();
-/* ============================================
-   GAMEDEV AI — BUTTONS MASTER FIX V5
-============================================ */
-
-// 1. إضافة المشروع
-window.addProject = createProject;
-
-
-// 2. القائمة الجانبية
-document.getElementById("mobileMenu")
-    ?.addEventListener("click", openSidebar);
-
-
-// 3. زر المظهر في الإعدادات
-document.getElementById("settingsThemeToggle")
-    ?.addEventListener("click", toggleTheme);
-
-
-// 4. إصلاح الإشعارات
-toast = function (message, type = "success") {
-    let container = document.getElementById("toastContainer");
-
-    if (!container) {
-        container = document.createElement("div");
-        container.id = "toastContainer";
-
-        Object.assign(container.style, {
-            position: "fixed",
-            bottom: "25px",
-            left: "25px",
-            zIndex: "99999"
-        });
-
-        document.body.appendChild(container);
-    }
-
-    const item = document.createElement("div");
-    item.textContent = message;
-
-    Object.assign(item.style, {
-        background: type === "error" ? "#991b1b" : "#25203c",
-        color: "#ffffff",
-        padding: "14px 22px",
-        marginTop: "8px",
-        borderRadius: "12px",
-        boxShadow: "0 5px 25px #0005",
-        fontFamily: "Cairo, sans-serif"
-    });
-
-    container.appendChild(item);
-
-    setTimeout(() => item.remove(), 3000);
-};
-
-
-// 5. إضافة قوالب السكربتات الناقصة
-ScriptTemplates.levels = `
--- GAMEDEV AI | LEVEL SYSTEM
+levels: `-- Level System
+-- ضع السكربت داخل ServerScriptService
 
 local Players = game:GetService("Players")
 
@@ -2125,552 +385,755 @@ Players.PlayerAdded:Connect(function(player)
     stats.Name = "leaderstats"
     stats.Parent = player
 
-    local level = Instance.new("IntValue")
-    level.Name = "Level"
-    level.Value = 1
-    level.Parent = stats
+    local Level = Instance.new("IntValue")
+    Level.Name = "Level"
+    Level.Value = 1
+    Level.Parent = stats
 
-    local xp = Instance.new("IntValue")
-    xp.Name = "XP"
-    xp.Value = 0
-    xp.Parent = player
+    local XP = Instance.new("IntValue")
+    XP.Name = "XP"
+    XP.Value = 0
+    XP.Parent = player
 
-    xp.Changed:Connect(function()
+    XP.Changed:Connect(function()
 
-        while xp.Value >= level.Value * 100 do
-            xp.Value -= level.Value * 100
-            level.Value += 1
+        local requiredXP = Level.Value * 100
+
+        while XP.Value >= requiredXP do
+            XP.Value -= requiredXP
+            Level.Value += 1
+            requiredXP = Level.Value * 100
         end
 
     end)
 
-end)
-`;
+end)`,
 
-ScriptTemplates.admin = `
--- GAMEDEV AI | ADMIN SYSTEM
+teleport: `-- Teleport System
+-- أنشئ Part باسم TeleportPart
+-- أنشئ Part باسم Destination
+-- ضع السكربت داخل ServerScriptService
+
+local teleportPart = workspace:WaitForChild("TeleportPart")
+local destination = workspace:WaitForChild("Destination")
+
+local debounce = {}
+
+teleportPart.Touched:Connect(function(hit)
+
+    local character = hit.Parent
+    local humanoid = character:FindFirstChildOfClass("Humanoid")
+    local player = game.Players:GetPlayerFromCharacter(character)
+
+    if not humanoid or not player then return end
+    if debounce[player] then return end
+
+    debounce[player] = true
+
+    character:PivotTo(destination.CFrame + Vector3.new(0, 4, 0))
+
+    task.wait(2)
+    debounce[player] = nil
+
+end)`,
+
+gui: `-- Simple GUI Button
+-- ضع LocalScript داخل TextButton
+
+local button = script.Parent
+
+button.MouseButton1Click:Connect(function()
+
+    print("Button clicked!")
+
+    button.Text = "تم الضغط!"
+
+    task.wait(1)
+
+    button.Text = "اضغط هنا"
+
+end)`,
+
+rounds: `-- Basic Round System
+-- ضع السكربت داخل ServerScriptService
 
 local Players = game:GetService("Players")
+
+local INTERMISSION = 15
+local ROUND_TIME = 60
+local MIN_PLAYERS = 2
+
+while true do
+
+    repeat
+        print("Waiting for players...")
+        task.wait(3)
+    until #Players:GetPlayers() >= MIN_PLAYERS
+
+    for i = INTERMISSION, 1, -1 do
+        print("Starting in:", i)
+        task.wait(1)
+    end
+
+    print("ROUND STARTED!")
+
+    for i = ROUND_TIME, 1, -1 do
+
+        if #Players:GetPlayers() < MIN_PLAYERS then
+            print("Not enough players!")
+            break
+        end
+
+        print("Time left:", i)
+        task.wait(1)
+
+    end
+
+    print("ROUND ENDED!")
+
+    task.wait(5)
+
+end`,
+
+admin: `-- Basic Admin Command
+-- ضع السكربت داخل ServerScriptService
+-- استبدل UserId برقم حسابك
 
 local ADMINS = {
     [123456789] = true
 }
 
-Players.PlayerAdded:Connect(function(player)
+game.Players.PlayerAdded:Connect(function(player)
 
     player.Chatted:Connect(function(message)
 
-        if not ADMINS[player.UserId] then
-            return
-        end
+        if not ADMINS[player.UserId] then return end
 
         local args = string.split(message, " ")
 
         if args[1] == "!speed" then
 
-            local speed = tonumber(args[2])
+            local amount = tonumber(args[2])
+            local character = player.Character
+            local humanoid = character and character:FindFirstChildOfClass("Humanoid")
 
-            if speed and player.Character then
-                local humanoid =
-                    player.Character:FindFirstChildOfClass("Humanoid")
-
-                if humanoid then
-                    humanoid.WalkSpeed = math.clamp(speed, 0, 100)
-                end
+            if humanoid and amount then
+                humanoid.WalkSpeed = math.clamp(amount, 0, 100)
             end
 
         end
 
     end)
 
-end)
+end)`,
 
--- غيّر 123456789 إلى UserId الخاص بك.
-`;
+custom: `-- Custom Roblox Script
+-- اكتب فكرتك في خانة التفاصيل
+-- هذا قالب بداية قابل للتعديل
 
+local Players = game:GetService("Players")
 
-// 6. إصلاح تصنيفات مولد السكربتات
-const oldGenerateScript = generateScript;
+Players.PlayerAdded:Connect(function(player)
 
-generateScript = function () {
+    print("Welcome", player.Name)
 
-    const select = document.getElementById("scriptCategory");
-    if (!select) return;
-
-    const oldValue = select.value;
-
-    const mapping = {
-        gui: "ui",
-        rounds: "round",
-        levels: "levels",
-        admin: "admin"
-    };
-
-    select.value = mapping[oldValue] || oldValue;
-
-    oldGenerateScript();
-
-    select.value = oldValue;
+end)`
 };
+
+function generateScript() {
+    const category = $("scriptCategory")?.value;
+    const details = $("scriptDetails")?.value.trim();
+
+    if (!category || !scriptTemplates[category]) {
+        showToast("اختر نوع السكربت");
+        return;
+    }
+
+    let code = scriptTemplates[category];
+
+    if (details) {
+        code = "-- تفاصيل طلبك: " + details.replace(/\n/g, " ") +
+            "\n\n" + code;
+    }
+
+    if ($("codeEditor")) {
+        $("codeEditor").value = code;
+    }
+
+    if ($("editorStatus")) {
+        $("editorStatus").textContent = "تم إنشاء السكربت بنجاح";
+    }
+
+    showToast("تم توليد السكربت");
+}
 
 window.generateScript = generateScript;
 
+/* ==========================================
+   COPY AND DOWNLOAD CODE
+========================================== */
 
-// 7. إصلاح تصنيفات مصمم الواجهات
-const oldGenerateGUI = generateGUI;
+async function copyCode() {
+    const editor = $("codeEditor");
 
-generateGUI = function () {
+    if (!editor || !editor.value.trim()) {
+        showToast("لا يوجد كود لنسخه");
+        return;
+    }
 
-    const select = document.getElementById("guiCategory");
-    if (!select) return;
+    try {
+        await navigator.clipboard.writeText(editor.value);
+        showToast("تم نسخ الكود");
+    } catch {
+        editor.select();
 
-    const oldValue = select.value;
+        try {
+            document.execCommand("copy");
+            showToast("تم نسخ الكود");
+        } catch {
+            showToast("تعذر النسخ، حدد الكود وانسخه يدويًا");
+        }
+    }
+}
 
-    const mapping = {
-        "Main Menu": "custom",
-        "Shop": "shop",
-        "Inventory": "inventory",
-        "Stats": "hud",
-        "Settings": "settings",
-        "Admin Panel": "custom",
-        "Loading Screen": "loading"
-    };
+function downloadCode() {
+    const editor = $("codeEditor");
 
-    select.value = mapping[oldValue] || "custom";
+    if (!editor || !editor.value.trim()) {
+        showToast("لا يوجد كود لتحميله");
+        return;
+    }
 
-    oldGenerateGUI();
+    const blob = new Blob(
+        [editor.value],
+        { type: "text/plain;charset=utf-8" }
+    );
 
-    select.value = oldValue;
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+
+    link.href = url;
+    link.download = "RobloxScript.lua";
+    link.click();
+
+    URL.revokeObjectURL(url);
+    showToast("تم تحميل ملف Lua");
+}
+
+window.copyCode = copyCode;
+window.downloadCode = downloadCode;
+
+/* ==========================================
+   MAP IDEA GENERATOR
+========================================== */
+
+const mapIdeas = {
+    "عالم مفتوح": [
+        "مدينة ساحلية فيها ميناء ومطار ومناطق سرية ومهام استكشاف.",
+        "جزيرة كبيرة تتغير فيها الأحداث حسب قرارات اللاعبين.",
+        "مدينة مستقبلية فيها مواصلات عامة ومهن ومتاجر قابلة للتطوير."
+    ],
+    "محاكاة واقعية": [
+        "محاكاة إدارة مطار: وظائف وترقيات وطائرات وخدمات للمسافرين.",
+        "محاكاة مستشفى فيها أقسام وأطباء وممرضون ونظام مناوبات.",
+        "محاكاة شركة توصيل فيها طلبات ومركبات وتقييمات وترقيات."
+    ],
+    "رعب": [
+        "فندق مهجور يتغير تصميم ممراته في كل جولة.",
+        "قرية معزولة تختفي منها الكهرباء تدريجيًا وعلى اللاعبين إصلاحها.",
+        "محطة قطار ليلية فيها ألغاز وأبواب ومهام هروب."
+    ],
+    "مغامرات": [
+        "رحلة بحث عن مدينة مفقودة وسط الصحراء.",
+        "مغامرة في جزر متعددة ولكل جزيرة تحدياتها وأسرارها.",
+        "معبد قديم مليء بالفخاخ والألغاز والكنوز."
+    ],
+    "حياة واقعية": [
+        "مدينة خليجية فيها وظائف إعلامي وشرطي وتاجر وميكانيكي مع ترقيات.",
+        "حياة في حي شعبي فيه حراج ومحلات ومدارس ومناسبات.",
+        "مدينة فيها نظام سمعة وعلاقات ووظائف ومشاريع تجارية."
+    ],
+    "تحديات": [
+        "برج تحديات يتغير كل طابق فيه عشوائيًا.",
+        "سباق جماعي بعقبات متحركة ومكافآت للمراكز الأولى.",
+        "تحدي البقاء على منصات تنهار مع مرور الوقت."
+    ],
+    "قتال": [
+        "ساحة فرق فيها أسلحة متنوعة ومهارات ونظام تصنيف.",
+        "معارك بين فرق للسيطرة على مناطق الخريطة.",
+        "بطولة قتالية فيها جولات ومكافآت وترتيب للاعبين."
+    ],
+    "اقتصاد": [
+        "مدينة تجارية يستطيع اللاعب فيها تأسيس شركة وتوظيف الآخرين.",
+        "سوق مزادات للاعبين مع نظام عرض وشراء وتبادل.",
+        "جزيرة موارد فيها مصانع ومزارع وسلاسل إنتاج."
+    ],
+    "بقاء": [
+        "جزيرة تتغير فيها الأحوال الجوية ويجب جمع الموارد.",
+        "مخيم صحراوي يحتاج إلى إدارة الماء والطعام والطاقة.",
+        "عالم بعد عاصفة كبيرة يحتاج اللاعبون فيه إلى بناء ملجأ."
+    ]
 };
 
-window.generateGUI = generateGUI;
+function generateIdea() {
+    const category = $("ideaCategory")?.value;
+    const details = $("ideaDetails")?.value.trim();
+    const ideas = mapIdeas[category];
 
+    if (!ideas) {
+        showToast("اختر تصنيف الماب");
+        return;
+    }
 
-// 8. إصلاح تصنيفات مولد الأفكار
-const oldGenerateIdea = generateIdea;
+    const idea = ideas[Math.floor(Math.random() * ideas.length)];
 
-generateIdea = function () {
+    if ($("ideaResult")) {
+        $("ideaResult").textContent =
+            "💡 فكرة الماب:\n" + idea +
+            (details ? "\n\nإضافاتك المطلوبة:\n" + details : "");
+    }
 
-    const select = document.getElementById("ideaCategory");
-    if (!select) return;
-
-    const oldValue = select.value;
-
-    const mapping = {
-        "عالم مفتوح": "custom",
-        "محاكاة واقعية": "simulator",
-        "رعب": "horror",
-        "مغامرات": "survival",
-        "حياة واقعية": "roleplay",
-        "تحديات": "obby",
-        "قتال": "battleground",
-        "اقتصاد": "tycoon",
-        "بقاء": "survival"
-    };
-
-    select.value = mapping[oldValue] || "custom";
-
-    oldGenerateIdea();
-
-    select.value = oldValue;
-};
+    showToast("تم إنشاء فكرة الماب");
+}
 
 window.generateIdea = generateIdea;
 
+/* ==========================================
+   GUI DESIGN PLANNER
+========================================== */
 
-// 9. تحديث عداد المحادثات
-const oldSendChat = sendChatMessage;
-
-sendChatMessage = async function (message) {
-    await oldSendChat(message);
-
-    const counter = document.getElementById("messageCount");
-
-    if (counter) {
-        counter.textContent = App.chat.length;
-    }
+const guiLayouts = {
+    "Main Menu": [
+        "ScreenGui",
+        " ├─ Background",
+        " ├─ GameTitle",
+        " ├─ PlayButton",
+        " ├─ SettingsButton",
+        " ├─ CreditsButton",
+        " └─ LocalScript"
+    ],
+    "Shop": [
+        "ScreenGui",
+        " ├─ ShopFrame",
+        " │   ├─ Title",
+        " │   ├─ CloseButton",
+        " │   ├─ ItemsContainer",
+        " │   └─ ItemTemplate",
+        " └─ LocalScript"
+    ],
+    "Inventory": [
+        "ScreenGui",
+        " ├─ InventoryFrame",
+        " │   ├─ Title",
+        " │   ├─ CloseButton",
+        " │   ├─ ItemsGrid",
+        " │   └─ ItemTemplate",
+        " └─ LocalScript"
+    ],
+    "Stats": [
+        "ScreenGui",
+        " ├─ StatsFrame",
+        " │   ├─ PlayerName",
+        " │   ├─ CoinsLabel",
+        " │   ├─ WinsLabel",
+        " │   ├─ LevelLabel",
+        " │   └─ CloseButton",
+        " └─ LocalScript"
+    ],
+    "Settings": [
+        "ScreenGui",
+        " ├─ SettingsFrame",
+        " │   ├─ Title",
+        " │   ├─ MusicToggle",
+        " │   ├─ SoundToggle",
+        " │   ├─ GraphicsButton",
+        " │   └─ CloseButton",
+        " └─ LocalScript"
+    ],
+    "Admin Panel": [
+        "ScreenGui",
+        " ├─ AdminFrame",
+        " │   ├─ Title",
+        " │   ├─ PlayerList",
+        " │   ├─ KickButton",
+        " │   ├─ BanButton",
+        " │   ├─ AnnouncementBox",
+        " │   └─ CloseButton",
+        " └─ LocalScript"
+    ],
+    "Loading Screen": [
+        "ScreenGui",
+        " ├─ LoadingFrame",
+        " │   ├─ GameLogo",
+        " │   ├─ LoadingText",
+        " │   ├─ ProgressBar",
+        " │   └─ ProgressFill",
+        " └─ LocalScript"
+    ]
 };
 
-window.sendChatMessage = sendChatMessage;
+function generateGUI() {
+    const category = $("guiCategory")?.value;
+    const details = $("guiDetails")?.value.trim();
 
-
-// 10. تحديث عداد المشاريع
-const oldRenderProjects = renderProjects;
-
-renderProjects = function () {
-    oldRenderProjects();
-
-    const counter = document.getElementById("projectCount");
-
-    if (counter) {
-        counter.textContent = App.projects.length;
+    if (!guiLayouts[category]) {
+        showToast("اختر نوع الواجهة");
+        return;
     }
-};
 
+    const result =
+        "واجهة: " + category + "\n\n" +
+        "Explorer Hierarchy:\n" +
+        guiLayouts[category].join("\n") +
+        (details ? "\n\nملاحظات إضافية:\n" + details : "") +
+        "\n\nملاحظة: هذا مخطط ترتيب العناصر، وليس واجهة منشأة تلقائيًا داخل Roblox Studio.";
 
-// 11. إصلاح زر الإشعارات
-document.querySelector(".notification-btn")
-    ?.addEventListener("click", function () {
-        toast("لا توجد إشعارات جديدة 🔔");
+    if ($("guiResult")) {
+        $("guiResult").textContent = result;
+    }
+
+    showToast("تم إنشاء مخطط الواجهة");
+}
+
+window.generateGUI = generateGUI;
+
+/* ==========================================
+   ERROR ANALYZER
+========================================== */
+
+function analyzeError() {
+    const input = $("errorInput")?.value.trim();
+
+    if (!input) {
+        showToast("الصق رسالة الخطأ أولاً");
+        return;
+    }
+
+    const text = input.toLowerCase();
+    let result = "لم أتعرف على الخطأ بشكل مؤكد. راجع السطر المذكور وتأكد من أسماء المتغيرات والعناصر.";
+
+    const checks = [
+        {
+            words: ["attempt to index nil", "nil value"],
+            answer: "السبب المحتمل: تحاول استخدام عنصر أو متغير قيمته nil.\nالحل: تأكد أن العنصر موجود باستخدام FindFirstChild أو WaitForChild قبل استخدامه."
+        },
+        {
+            words: ["infinite yield possible"],
+            answer: "السبب المحتمل: WaitForChild ينتظر عنصرًا لم يتم العثور عليه.\nالحل: تأكد من اسم العنصر ومكانه داخل Explorer."
+        },
+        {
+            words: ["syntax error", "expected"],
+            answer: "السبب المحتمل: خطأ في كتابة Lua.\nالحل: راجع الأقواس وعلامات التنصيص و end والفواصل."
+        },
+        {
+            words: ["is not a valid member"],
+            answer: "السبب المحتمل: تستخدم خاصية أو عنصرًا غير موجود بهذا الاسم.\nالحل: تحقق من الاسم ونوع العنصر."
+        },
+        {
+            words: ["http 403", "403"],
+            answer: "السبب المحتمل: صلاحيات أو إعدادات وصول غير صحيحة.\nالحل: راجع صلاحيات الخدمة أو إعدادات اللعبة."
+        },
+        {
+            words: ["datastore", "502", "503"],
+            answer: "قد تكون المشكلة في DataStore أو الاتصال بالخدمة.\nالحل: استخدم pcall، وتأكد من تفعيل API Services عند الاختبار في Studio."
+        },
+        {
+            words: ["attempt to call"],
+            answer: "السبب المحتمل: تحاول تشغيل قيمة ليست دالة.\nالحل: تحقق من اسم الدالة ومن أنك لم تستبدلها بمتغير."
+        }
+    ];
+
+    for (const check of checks) {
+        if (check.words.some(word => text.includes(word))) {
+            result = check.answer;
+            break;
+        }
+    }
+
+    if ($("errorResult")) {
+        $("errorResult").textContent =
+            "نتيجة التحليل:\n\n" + result +
+            "\n\nالخطأ الذي أرسلته:\n" + input;
+    }
+
+    showToast("اكتمل تحليل الخطأ");
+}
+
+window.analyzeError = analyzeError;
+
+/* ==========================================
+   CHAT ENGINE — LOCAL RESPONSES
+========================================== */
+
+let messages = readStorage(STORAGE.messages);
+
+function renderMessages() {
+    const container = $("chatMessages");
+    if (!container) return;
+
+    container.innerHTML = "";
+
+    messages.forEach(message => {
+        const bubble = document.createElement("div");
+        bubble.className = "message " + message.role;
+        bubble.textContent = message.text;
+        container.appendChild(bubble);
     });
 
+    container.scrollTop = container.scrollHeight;
 
-console.log("GAMEDEV AI V5 — BUTTONS FIXED");
-/* =========================================
-   GAMEDEV AI — BUTTON SYSTEM V1
-   نظام ربط الأزرار الأساسي
-========================================= */
+    if ($("messageCount")) {
+        $("messageCount").textContent = messages.length;
+    }
+}
 
-(function () {
-    "use strict";
+function getAIResponse(question) {
+    const q = question.toLowerCase();
 
-    // منع تكرار تشغيل النظام
-    if (window.GAMEDEV_BUTTONS_V1) return;
-    window.GAMEDEV_BUTTONS_V1 = true;
-
-    // الإشعارات
-    window.toast = function (message, type = "success") {
-        const box = document.getElementById("toast");
-        const text = document.getElementById("toastMessage");
-
-        if (box && text) {
-            text.textContent = message;
-            box.classList.add("show");
-
-            clearTimeout(window.GDToastTimer);
-
-            window.GDToastTimer = setTimeout(() => {
-                box.classList.remove("show");
-            }, 2800);
-
-            return;
-        }
-
-        console.log("[GAMEDEV AI]", message);
-    };
-
-    // زر القائمة الجانبية
-    const mobileMenu = document.getElementById("mobileMenu");
-
-    if (mobileMenu && typeof window.openSidebar === "function") {
-        mobileMenu.addEventListener("click", window.openSidebar);
+    if (q.includes("leaderstats") || q.includes("لوحة") || q.includes("احصائيات")) {
+        return "لإنشاء Leaderstats في Roblox:\n1. افتح ServerScriptService.\n2. أضف Script.\n3. أنشئ Folder باسم leaderstats داخل اللاعب.\n4. أضف IntValue مثل Coins أو Wins.\n\nتقدر تستخدم مولد السكربتات للحصول على قالب جاهز.";
     }
 
-    // زر إغلاق القائمة
-    const sidebarClose = document.getElementById("sidebarClose");
-
-    if (sidebarClose && typeof window.closeSidebar === "function") {
-        sidebarClose.addEventListener("click", window.closeSidebar);
+    if (q.includes("datastore") || q.includes("حفظ") || q.includes("يحفظ")) {
+        return "لحفظ بيانات اللاعبين استخدم DataStoreService.\nضع نظام الحفظ داخل ServerScriptService، واستخدم pcall عند القراءة والكتابة. لا تنس تفعيل API Services في إعدادات اللعبة للاختبار.";
     }
 
-    // زر المظهر في الإعدادات
-    const settingsTheme = document.getElementById("settingsThemeToggle");
-
-    if (settingsTheme && typeof window.toggleTheme === "function") {
-        settingsTheme.addEventListener("click", window.toggleTheme);
+    if (q.includes("فكرة") || q.includes("ماب") || q.includes("map")) {
+        return "عندي لك فكرة: مدينة خليجية مفتوحة فيها وظائف وترقيات وحراج ومشاريع تجارية. خل كل وظيفة لها مهام يومية ورتب ومكافآت حتى يستمر اللاعب في التطور.";
     }
 
-    // تحديث العدادات
-    function updateCounters() {
-        const projects = document.getElementById("projectCount");
-        const messages = document.getElementById("messageCount");
-
-        if (projects && window.App?.projects) {
-            projects.textContent = window.App.projects.length;
-        }
-
-        if (messages && window.App?.chat) {
-            messages.textContent = window.App.chat.length;
-        }
+    if (q.includes("سرعة") || q.includes("walkspeed")) {
+        return "لتغيير سرعة اللاعب في Roblox استخدم Humanoid.WalkSpeed من سكربت سيرفر، وتأكد من التحقق من صلاحيات اللاعب إذا كان التغيير بأمر إداري.";
     }
 
-    // تشغيل بعد تحميل الصفحة
-    if (document.readyState === "loading") {
-        document.addEventListener("DOMContentLoaded", updateCounters);
-    } else {
-        updateCounters();
+    if (q.includes("متجر") || q.includes("shop")) {
+        return "أنصحك ببناء المتجر باستخدام RemoteEvent، لكن تحقق من السعر والرصيد داخل ServerScriptService، ولا تعتمد على LocalScript في عمليات الشراء.";
     }
 
-    console.log("GAMEDEV AI BUTTON SYSTEM V1 LOADED");
-})();
-/* =========================================
-   GAMEDEV AI — NAVIGATION SYSTEM V2
-   نظام التنقل بين الصفحات
-========================================= */
+    if (q.includes("خطأ") || q.includes("error") || q.includes("خربان")) {
+        return "أرسل لي رسالة الخطأ كاملة مع اسم السكربت ومكانه في Explorer. أقدر أساعدك تحدد السبب المحتمل وتقترح إصلاحًا.";
+    }
 
-(function () {
-    "use strict";
+    if (q.includes("واجهة") || q.includes("gui")) {
+        return "ابدأ بإنشاء ScreenGui داخل StarterGui، ثم Frame رئيسي وأزرار وعناوين. استخدم UIListLayout أو UIGridLayout لترتيب العناصر تلقائيًا.";
+    }
 
-    if (window.GAMEDEV_NAV_V2) return;
-    window.GAMEDEV_NAV_V2 = true;
+    if (q.includes("السلام") || q.includes("هلا") || q.includes("مرحبا")) {
+        return "وعليكم السلام! 👋 وش بنبرمج اليوم؟ أقدر أساعدك في سكربتات Roblox وأفكار المابات وتصميم الأنظمة.";
+    }
 
-    document.addEventListener("click", function (event) {
+    if (q.includes("شكرا") || q.includes("مشكور")) {
+        return "العفو! 🔥 إذا عندك فكرة ثانية للعبة نقدر نشتغل عليها خطوة بخطوة.";
+    }
 
-        const button = event.target.closest(".nav-item[data-page]");
+    return "وصلت فكرتك! عشان أساعدك بشكل أدق، اكتب لي وش تبي تسوي في Roblox، واذكر مكان السكربت ونوعه (Script أو LocalScript). أقدر أعطيك خطوات وكود مبدئي. ملاحظة: المساعد الحالي يعمل بمحرك محلي داخل المتصفح، وليس متصلًا بنموذج ذكاء اصطناعي خارجي.";
+}
 
-        if (!button) return;
+function sendChat() {
+    const input = $("chatInput");
+    if (!input) return;
 
-        const page = button.getAttribute("data-page");
+    const question = input.value.trim();
+    if (!question) return;
 
-        if (!page) return;
-
-        // منع السلوك الافتراضي
-        event.preventDefault();
-
-        // الانتقال إلى الصفحة
-        if (typeof window.navigate === "function") {
-            window.navigate(page);
-        } else {
-            console.error("GAMEDEV AI: navigate function not found");
-        }
-
-        // إغلاق القائمة الجانبية
-        if (typeof window.closeSidebar === "function") {
-            window.closeSidebar();
-        }
-
-    }, true);
-
-    // أزرار الانتقال السريع
-    document.addEventListener("click", function (event) {
-
-        const button = event.target.closest("[data-open-page]");
-
-        if (!button) return;
-
-        const page = button.dataset.openPage;
-
-        if (page && typeof window.navigate === "function") {
-            window.navigate(page);
-        }
-
+    messages.push({
+        role: "user",
+        text: question
     });
 
-    console.log("GAMEDEV AI NAVIGATION V2 LOADED");
+    messages.push({
+        role: "assistant",
+        text: getAIResponse(question)
+    });
 
-})();
-/* =====================================================
-   GAMEDEV AI — UNIVERSAL BUTTON FIX
-   إصلاح شامل للأزرار والتفاعلات
-===================================================== */
+    writeStorage(STORAGE.messages, messages);
+    input.value = "";
 
-(function () {
-    "use strict";
+    renderMessages();
+}
 
-    if (window.GD_UNIVERSAL_FIX) return;
-    window.GD_UNIVERSAL_FIX = true;
+function clearChat() {
+    if (!confirm("هل تريد مسح المحادثة؟")) return;
 
-    /* ---------- NOTIFICATIONS ---------- */
+    messages = [];
+    writeStorage(STORAGE.messages, messages);
+    renderMessages();
 
-    window.toast = function (message, type = "success") {
-        let toastBox = document.getElementById("toast");
+    showToast("تم مسح المحادثة");
+}
 
-        if (!toastBox) {
-            toastBox = document.createElement("div");
-            toastBox.id = "toast";
+window.sendChat = sendChat;
+window.clearChat = clearChat;
 
-            Object.assign(toastBox.style, {
-                position: "fixed",
-                bottom: "25px",
-                right: "25px",
-                zIndex: "999999",
-                padding: "15px 22px",
-                borderRadius: "14px",
-                background: "#181827",
-                color: "#ffffff",
-                boxShadow: "0 0 25px #7c3aed55",
-                display: "none"
-            });
+/* ==========================================
+   CODE LIBRARY
+========================================== */
 
-            document.body.appendChild(toastBox);
-        }
+let library = readStorage(STORAGE.library);
 
-        toastBox.textContent = message;
-        toastBox.style.display = "block";
-        toastBox.style.border = type === "error"
-            ? "1px solid #ef4444"
-            : "1px solid #8b5cf6";
+function renderLibrary() {
+    const container = $("libraryList");
+    if (!container) return;
 
-        clearTimeout(window.GDToastTimeout);
+    container.innerHTML = library.length
+        ? library.map(item => `
+            <div class="library-card">
+                <h3>${escapeHTML(item.name)}</h3>
+                <pre>${escapeHTML(item.code)}</pre>
+                <button onclick="copyLibraryCode('${item.id}')">نسخ</button>
+                <button onclick="deleteLibraryCode('${item.id}')">حذف</button>
+            </div>
+        `).join("")
+        : "<p>مكتبتك فارغة حاليًا.</p>";
+}
 
-        window.GDToastTimeout = setTimeout(() => {
-            toastBox.style.display = "none";
-        }, 3000);
-    };
+function saveLibrary() {
+    const name = $("libraryName")?.value.trim();
+    const code = $("libraryInput")?.value.trim();
 
+    if (!name || !code) {
+        showToast("اكتب اسم الكود والصق الكود");
+        return;
+    }
 
-    /* ---------- SAFE CLICK HANDLER ---------- */
+    library.push({
+        id: Date.now().toString(),
+        name,
+        code
+    });
 
-    function bind(id, callback) {
-        const element = document.getElementById(id);
+    writeStorage(STORAGE.library, library);
 
-        if (!element || element.dataset.gdBound) return;
+    $("libraryName").value = "";
+    $("libraryInput").value = "";
 
-        element.dataset.gdBound = "true";
+    renderLibrary();
+    showToast("تم حفظ الكود في مكتبتك");
+}
 
-        element.addEventListener("click", function (event) {
-            try {
-                callback(event);
-            } catch (error) {
-                console.error("Button error:", id, error);
-                toast("حدث خطأ أثناء تشغيل الزر", "error");
-            }
+async function copyLibraryCode(id) {
+    const item = library.find(entry => entry.id === id);
+    if (!item) return;
+
+    try {
+        await navigator.clipboard.writeText(item.code);
+        showToast("تم نسخ الكود");
+    } catch {
+        showToast("تعذر النسخ من المتصفح");
+    }
+}
+
+function deleteLibraryCode(id) {
+    if (!confirm("حذف هذا الكود من المكتبة؟")) return;
+
+    library = library.filter(item => item.id !== id);
+    writeStorage(STORAGE.library, library);
+
+    renderLibrary();
+    showToast("تم حذف الكود");
+}
+
+window.saveLibrary = saveLibrary;
+window.copyLibraryCode = copyLibraryCode;
+window.deleteLibraryCode = deleteLibraryCode;
+
+/* ==========================================
+   RESET APPLICATION DATA
+========================================== */
+
+function resetAllData() {
+    if (!confirm("هل أنت متأكد؟ سيتم حذف المشاريع والمحادثات والمكتبة.")) {
+        return;
+    }
+
+    projects = [];
+    messages = [];
+    library = [];
+
+    writeStorage(STORAGE.projects, projects);
+    writeStorage(STORAGE.messages, messages);
+    writeStorage(STORAGE.library, library);
+
+    renderProjects();
+    renderMessages();
+    renderLibrary();
+
+    showToast("تمت إعادة ضبط بيانات التطبيق");
+}
+
+window.resetAllData = resetAllData;
+
+/* ==========================================
+   INITIALIZE ALL SYSTEMS
+========================================== */
+
+document.addEventListener("DOMContentLoaded", function () {
+
+    // Navigation
+    document.querySelectorAll(".nav-item[data-page]").forEach(button => {
+        button.addEventListener("click", () => {
+            navigate(button.dataset.page);
         });
-    }
+    });
 
+    // Sidebar
+    $("mobileMenu")?.addEventListener("click", openSidebar);
+    $("sidebarClose")?.addEventListener("click", closeSidebar);
 
-    /* ---------- NAVIGATION ---------- */
+    // Theme
+    $("themeToggle")?.addEventListener("click", toggleTheme);
+    $("settingsThemeToggle")?.addEventListener("click", toggleTheme);
 
-    document.addEventListener("click", function (event) {
-        const item = event.target.closest(".nav-item[data-page]");
+    const savedTheme = readStorage(STORAGE.theme, "dark");
+    applyTheme(savedTheme);
 
-        if (!item) return;
+    // Chat
+    $("chatForm")?.addEventListener("submit", function (event) {
+        event.preventDefault();
+        sendChat();
+    });
 
-        const page = item.dataset.page;
+    $("clearChat")?.addEventListener("click", clearChat);
 
-        if (page && typeof window.navigate === "function") {
-            window.navigate(page);
-        }
+    // Projects
+    $("createProjectBtn")?.addEventListener("click", addProject);
 
-        if (typeof window.closeSidebar === "function") {
-            window.closeSidebar();
+    // Library
+    $("saveLibraryBtn")?.addEventListener("click", saveLibrary);
+
+    // Script generator
+    $("generateScriptBtn")?.addEventListener("click", generateScript);
+    $("copyCode")?.addEventListener("click", copyCode);
+    $("downloadCode")?.addEventListener("click", downloadCode);
+
+    // Ideas and GUI
+    $("generateIdeaBtn")?.addEventListener("click", generateIdea);
+    $("generateGUIBtn")?.addEventListener("click", generateGUI);
+
+    // Error analyzer
+    $("analyzeErrorBtn")?.addEventListener("click", analyzeError);
+
+    // Reset
+    $("resetAllData")?.addEventListener("click", resetAllData);
+
+    // Notifications
+    document.querySelector(".notification-btn")?.addEventListener("click", () => {
+        showToast("ما عندك إشعارات جديدة");
+    });
+
+    // Enter to send chat
+    $("chatInput")?.addEventListener("keydown", function (event) {
+        if (event.key === "Enter" && !event.shiftKey) {
+            event.preventDefault();
+            sendChat();
         }
     });
 
+    // Initial rendering
+    renderProjects();
+    renderMessages();
+    renderLibrary();
 
-    /* ---------- MOBILE MENU ---------- */
-
-    bind("mobileMenu", function () {
-        if (typeof window.openSidebar === "function") {
-            window.openSidebar();
-        }
-    });
-
-    bind("sidebarClose", function () {
-        if (typeof window.closeSidebar === "function") {
-            window.closeSidebar();
-        }
-    });
-
-
-    /* ---------- THEME ---------- */
-
-    bind("settingsThemeToggle", function () {
-        if (typeof window.toggleTheme === "function") {
-            window.toggleTheme();
-        }
-    });
-
-
-    /* ---------- ADD PROJECT ---------- */
-
-    window.addProject = function () {
-        if (typeof window.createProject === "function") {
-            window.createProject();
-        } else {
-            toast("نظام المشاريع غير جاهز", "error");
-        }
-    };
-
-
-    /* ---------- CLEAR CHAT ---------- */
-
-    bind("clearChat", function () {
-        if (typeof window.clearChat === "function") {
-            window.clearChat();
-        }
-    });
-
-
-    /* ---------- COPY CODE ---------- */
-
-    bind("copyCode", function () {
-        if (typeof window.copyCode === "function") {
-            window.copyCode();
-        }
-    });
-
-
-    /* ---------- DOWNLOAD CODE ---------- */
-
-    bind("downloadCode", function () {
-        if (typeof window.downloadCode === "function") {
-            window.downloadCode();
-        }
-    });
-
-
-    /* ---------- GENERATE SCRIPT ---------- */
-
-    bind("generateScriptBtn", function () {
-        if (typeof window.generateScript === "function") {
-            window.generateScript();
-        }
-    });
-
-
-    /* ---------- GENERATE IDEA ---------- */
-
-    bind("generateIdeaBtn", function () {
-        if (typeof window.generateIdea === "function") {
-            window.generateIdea();
-        }
-    });
-
-
-    /* ---------- GENERATE GUI ---------- */
-
-    bind("generateGUIBtn", function () {
-        if (typeof window.generateGUI === "function") {
-            window.generateGUI();
-        }
-    });
-
-
-    /* ---------- ANALYZE ERROR ---------- */
-
-    bind("analyzeErrorBtn", function () {
-        if (typeof window.analyzeError === "function") {
-            window.analyzeError();
-        }
-    });
-
-
-    /* ---------- RESET ---------- */
-
-    bind("resetAllData", function () {
-        if (typeof window.resetAllData === "function") {
-            window.resetAllData();
-        }
-    });
-
-
-    /* ---------- COUNTERS ---------- */
-
-    function updateCounters() {
-        if (!window.App) return;
-
-        const projects = document.getElementById("projectCount");
-        const messages = document.getElementById("messageCount");
-
-        if (projects && Array.isArray(App.projects)) {
-            projects.textContent = App.projects.length;
-        }
-
-        if (messages && Array.isArray(App.chat)) {
-            messages.textContent = App.chat.length;
-        }
-    }
-
-
-    /* ---------- START ---------- */
-
-    if (document.readyState === "loading") {
-        document.addEventListener("DOMContentLoaded", updateCounters);
-    } else {
-        updateCounters();
-    }
-
-    console.log("GAMEDEV AI UNIVERSAL FIX LOADED");
-
-})();
+    console.log("GAMEDEV AI initialized successfully.");
+});
+```
