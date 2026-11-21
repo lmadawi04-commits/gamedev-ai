@@ -2449,3 +2449,228 @@ console.log("GAMEDEV AI V5 — BUTTONS FIXED");
     console.log("GAMEDEV AI NAVIGATION V2 LOADED");
 
 })();
+/* =====================================================
+   GAMEDEV AI — UNIVERSAL BUTTON FIX
+   إصلاح شامل للأزرار والتفاعلات
+===================================================== */
+
+(function () {
+    "use strict";
+
+    if (window.GD_UNIVERSAL_FIX) return;
+    window.GD_UNIVERSAL_FIX = true;
+
+    /* ---------- NOTIFICATIONS ---------- */
+
+    window.toast = function (message, type = "success") {
+        let toastBox = document.getElementById("toast");
+
+        if (!toastBox) {
+            toastBox = document.createElement("div");
+            toastBox.id = "toast";
+
+            Object.assign(toastBox.style, {
+                position: "fixed",
+                bottom: "25px",
+                right: "25px",
+                zIndex: "999999",
+                padding: "15px 22px",
+                borderRadius: "14px",
+                background: "#181827",
+                color: "#ffffff",
+                boxShadow: "0 0 25px #7c3aed55",
+                display: "none"
+            });
+
+            document.body.appendChild(toastBox);
+        }
+
+        toastBox.textContent = message;
+        toastBox.style.display = "block";
+        toastBox.style.border = type === "error"
+            ? "1px solid #ef4444"
+            : "1px solid #8b5cf6";
+
+        clearTimeout(window.GDToastTimeout);
+
+        window.GDToastTimeout = setTimeout(() => {
+            toastBox.style.display = "none";
+        }, 3000);
+    };
+
+
+    /* ---------- SAFE CLICK HANDLER ---------- */
+
+    function bind(id, callback) {
+        const element = document.getElementById(id);
+
+        if (!element || element.dataset.gdBound) return;
+
+        element.dataset.gdBound = "true";
+
+        element.addEventListener("click", function (event) {
+            try {
+                callback(event);
+            } catch (error) {
+                console.error("Button error:", id, error);
+                toast("حدث خطأ أثناء تشغيل الزر", "error");
+            }
+        });
+    }
+
+
+    /* ---------- NAVIGATION ---------- */
+
+    document.addEventListener("click", function (event) {
+        const item = event.target.closest(".nav-item[data-page]");
+
+        if (!item) return;
+
+        const page = item.dataset.page;
+
+        if (page && typeof window.navigate === "function") {
+            window.navigate(page);
+        }
+
+        if (typeof window.closeSidebar === "function") {
+            window.closeSidebar();
+        }
+    });
+
+
+    /* ---------- MOBILE MENU ---------- */
+
+    bind("mobileMenu", function () {
+        if (typeof window.openSidebar === "function") {
+            window.openSidebar();
+        }
+    });
+
+    bind("sidebarClose", function () {
+        if (typeof window.closeSidebar === "function") {
+            window.closeSidebar();
+        }
+    });
+
+
+    /* ---------- THEME ---------- */
+
+    bind("settingsThemeToggle", function () {
+        if (typeof window.toggleTheme === "function") {
+            window.toggleTheme();
+        }
+    });
+
+
+    /* ---------- ADD PROJECT ---------- */
+
+    window.addProject = function () {
+        if (typeof window.createProject === "function") {
+            window.createProject();
+        } else {
+            toast("نظام المشاريع غير جاهز", "error");
+        }
+    };
+
+
+    /* ---------- CLEAR CHAT ---------- */
+
+    bind("clearChat", function () {
+        if (typeof window.clearChat === "function") {
+            window.clearChat();
+        }
+    });
+
+
+    /* ---------- COPY CODE ---------- */
+
+    bind("copyCode", function () {
+        if (typeof window.copyCode === "function") {
+            window.copyCode();
+        }
+    });
+
+
+    /* ---------- DOWNLOAD CODE ---------- */
+
+    bind("downloadCode", function () {
+        if (typeof window.downloadCode === "function") {
+            window.downloadCode();
+        }
+    });
+
+
+    /* ---------- GENERATE SCRIPT ---------- */
+
+    bind("generateScriptBtn", function () {
+        if (typeof window.generateScript === "function") {
+            window.generateScript();
+        }
+    });
+
+
+    /* ---------- GENERATE IDEA ---------- */
+
+    bind("generateIdeaBtn", function () {
+        if (typeof window.generateIdea === "function") {
+            window.generateIdea();
+        }
+    });
+
+
+    /* ---------- GENERATE GUI ---------- */
+
+    bind("generateGUIBtn", function () {
+        if (typeof window.generateGUI === "function") {
+            window.generateGUI();
+        }
+    });
+
+
+    /* ---------- ANALYZE ERROR ---------- */
+
+    bind("analyzeErrorBtn", function () {
+        if (typeof window.analyzeError === "function") {
+            window.analyzeError();
+        }
+    });
+
+
+    /* ---------- RESET ---------- */
+
+    bind("resetAllData", function () {
+        if (typeof window.resetAllData === "function") {
+            window.resetAllData();
+        }
+    });
+
+
+    /* ---------- COUNTERS ---------- */
+
+    function updateCounters() {
+        if (!window.App) return;
+
+        const projects = document.getElementById("projectCount");
+        const messages = document.getElementById("messageCount");
+
+        if (projects && Array.isArray(App.projects)) {
+            projects.textContent = App.projects.length;
+        }
+
+        if (messages && Array.isArray(App.chat)) {
+            messages.textContent = App.chat.length;
+        }
+    }
+
+
+    /* ---------- START ---------- */
+
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", updateCounters);
+    } else {
+        updateCounters();
+    }
+
+    console.log("GAMEDEV AI UNIVERSAL FIX LOADED");
+
+})();
